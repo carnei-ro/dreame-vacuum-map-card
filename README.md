@@ -9,13 +9,14 @@ A modern, beautiful Home Assistant Lovelace card for controlling Dreame robot va
 ## Features
 
 - (Almost) complete feature parity with the original Dreame application
-- Support for **Room**, **All**, and **Zone** cleaning modes
+- Support for **Room**, **All**, and **Zone** cleaning modes, including several zones at once
 - Interactive map with room and zone selection
 - CleanGenius and Custom cleaning mode configuration
 - **Per-room customized cleaning**: Configure suction level, wetness, and cleaning cycles for each room individually
+- **Dock popup**: station status and dock tasks while the robot is docked
 - Real-time vacuum status and battery level
-- **Customizable Theming**: Light, dark, and fully customizable themes
-- **Internationalization (i18n)**: Multiple language support (English, German, Russian, Polish, Italian, Dutch, Spanish, Chinese, Hebrew) with RTL support
+- **Theming**: follows Home Assistant dark mode, or an explicit light, dark, or custom theme
+- **Internationalization**: follows the Home Assistant language, with explicit language packs and RTL support for Hebrew
 
 <div style="display: flex; gap: 10px;">
     <img src="https://github.com/noambergauz/dreame-vacuum-map-card/raw/master/screenshots/light-main.png" alt="Main Screen Light" style="width: 33%;">
@@ -87,9 +88,9 @@ Go to Settings → Dashboards → Resources → Add Resource:
 type: custom:dreame-vacuum-map-card
 entity: vacuum.dreame_vacuum_entity
 title: Dreame Vacuum
-map_entity: camera.dreame_vacuum_entity # Optional, defaults to camera.${ENTITY_NAME}_map
-theme: light # Optional, 'light' (default), 'dark', or 'custom'
-language: en # Optional, 'en' (default) or 'de'
+map_entity: camera.dreame_vacuum_entity # Optional. Defaults to the live map camera registered for this vacuum
+theme: auto # Optional. 'auto' (default) follows Home Assistant dark mode. Also 'light', 'dark', or 'custom'
+language: auto # Optional. 'auto' (default) follows the Home Assistant language
 default_mode: all # Optional, 'all' (default), 'room', or 'zone'
 default_room_view: map # Optional, 'map' (default) or 'list'
 map_overlays: # Experimental Optional, list of overlays to show on the map
@@ -121,7 +122,17 @@ The card features a comprehensive theming system with built-in and custom theme 
 
 ### Built-in Themes
 
-#### Light Theme (Default)
+#### Auto (default)
+
+When `theme` is omitted or set to `auto`, the card follows Home Assistant's dark mode.
+
+```yaml
+type: custom:dreame-vacuum-map-card
+entity: vacuum.dreame_vacuum_entity
+theme: auto
+```
+
+#### Light Theme
 
 ```yaml
 type: custom:dreame-vacuum-map-card
@@ -224,7 +235,11 @@ The card supports per-room customized cleaning settings, allowing you to configu
 
 ## Internationalization (i18n)
 
-The card supports multiple languages. Currently available:
+When `language` is omitted or set to `auto`, the card follows Home Assistant's language. An explicit code forces that pack. Codes the card does not ship fall back to English.
+
+Entity names and the vacuum status come from the Dreame integration's translations. Buttons, map text, and settings titles stay in the card's language packs.
+
+Currently available:
 
 - **English (en)** - Default
 - **German (de)** - Deutsch
@@ -235,7 +250,7 @@ The card supports multiple languages. Currently available:
 - **Spanish (es)** - Español
 - **Chinese (zh)** - 中文
 - **French (fr_FR)** - Français
-- **Korean (ko)** - 한국인
+- **Korean (ko)** - 한국어
 - **Hebrew (he)** - עברית (RTL supported)
 
 Set the language in your configuration:
@@ -246,7 +261,7 @@ entity: vacuum.dreame_vacuum_entity
 language: de
 ```
 
-All user-facing text is translated, including:
+The card's own text is translated, including:
 
 - Room selection and cleaning modes
 - Action buttons (Clean, Pause, Resume, Stop, Dock)
@@ -316,7 +331,7 @@ The built file will be in `dist/dreame-vacuum-map-card.js`
 
 The card shows the controls Home Assistant registered for this vacuum. The Dreame integration already creates an entity only when that model supports it, so a missing feature does not leave an empty row. Config entities the card does not lay out itself appear under **More**.
 
-Shortcuts are the exception: they have no companion entity, so the card reads the `shortcuts` capability from the vacuum. See [docs/CAPABILITIES.md](docs/CAPABILITIES.md).
+Shortcuts are the exception: they have no companion entity, so the card reads the `shortcuts` capability from the vacuum.
 
 ## Credits
 
