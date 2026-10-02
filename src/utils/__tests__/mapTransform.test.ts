@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { CalibrationPoint, Room } from '@/types/homeassistant';
 import { fitAffine, resolveMapTransform, type MapDimensions, type MapRotation } from '../mapTransform';
-import { convertUIZoneToVacuumZone } from '../zoneConverter';
+import { convertUIZoneToVacuumZone, buildCleanZonePayload } from '../zoneConverter';
 
 function calibrationForRotation(rotation: MapRotation): CalibrationPoint[] {
   const mapPoints: Record<MapRotation, Array<{ x: number; y: number }>> = {
@@ -221,5 +221,40 @@ describe('convertUIZoneToVacuumZone', () => {
       ok: false,
       reason: 'unsafe_zone',
     });
+  });
+
+  it('sends every zone as its own coordinate array', () => {
+    const transform = fitAffine(calibrationForRotation(90));
+    const result = buildCleanZonePayload(
+      [
+        { x1: 20, y1: 30, x2: 60, y2: 70 },
+        { x1: 0, y1: 0, x2: 10, y2: 20 },
+      ],
+      transform,
+      100,
+      100
+    );
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.zones).toEqual([
+      [250, 125, 750, 625],
+      [-125, -125, 125, 0],
+    ]);
+  });
+
+  it('does not build a payload when any zone fails conversion', () => {
+    const transform = fitAffine(calibrationForRotation(0));
+    expect(
+      buildCleanZonePayload(
+        [
+          { x1: 10, y1: 10, x2: 20, y2: 30 },
+          { x1: 10, y1: 10, x2: 10, y2: 20 },
+        ],
+        transform,
+        100,
+        100
+      )
+    ).toEqual({ ok: false, reason: 'unsafe_zone' });
   });
 });

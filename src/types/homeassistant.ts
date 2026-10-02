@@ -58,7 +58,7 @@ export interface HassConfig {
   map_entity?: string;
   title?: string;
   type: string;
-  theme?: 'light' | 'dark' | 'custom';
+  theme?: 'light' | 'dark' | 'custom' | 'auto';
   custom_theme?: CustomThemeConfig;
   language?: string;
   default_mode?: CleaningSelectionMode;
@@ -91,6 +91,9 @@ export interface HassConnection {
 export interface Hass {
   states: Record<string, HassEntity>;
   language?: string;
+  themes?: {
+    darkMode?: boolean;
+  };
   callService: (domain: string, service: string, data?: Record<string, unknown>) => Promise<void>;
   callWS: <T>(message: Record<string, unknown>) => Promise<T>;
   connection?: HassConnection;

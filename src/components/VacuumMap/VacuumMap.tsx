@@ -19,8 +19,8 @@ interface VacuumMapProps {
   selectedMode: CleaningSelectionMode;
   selectedRooms: Map<number, string>;
   onRoomToggle: (roomId: number, roomName: string) => void;
-  zone: Zone | null;
-  onZoneChange: (zone: Zone | null) => void;
+  zone: Zone[];
+  onZoneChange: (zones: Zone[]) => void;
   onImageDimensionsChange?: (width: number, height: number, imageToken: string) => void;
   defaultRoomView?: RoomViewMode;
 }
@@ -263,8 +263,8 @@ export function VacuumMap({
 
               {selectedMode === 'zone' && (
                 <ZoneOverlay
-                  zone={zone}
-                  onZoneChange={onZoneChange}
+                  zones={zone}
+                  onZonesChange={onZoneChange}
                   clearZoneLabel={t('vacuum_map.clear_zone')}
                   contentRef={contentRef}
                 />
@@ -294,7 +294,7 @@ export function VacuumMap({
 
       {selectedMode === 'zone' && (
         <div className="vacuum-map__overlay">
-          {zone ? t('vacuum_map.zone_overlay_resize') : t('vacuum_map.zone_overlay_create')}
+          {zone.length > 0 ? t('vacuum_map.zone_overlay_resize') : t('vacuum_map.zone_overlay_create')}
         </div>
       )}
     </div>

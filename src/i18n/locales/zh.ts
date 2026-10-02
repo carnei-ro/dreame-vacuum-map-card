@@ -26,10 +26,13 @@ export const zh: Translation = {
   // Vacuum Map (建图与地图交互)
   vacuum_map: {
     no_map: '暂无地图',
+    diagnostic_no_camera: '缺少地图摄像头',
+    diagnostic_no_rooms: '此地图没有房间',
+    diagnostic_bad_calibration: '缺少地图校准',
     looking_for: '正在寻找：{{entity}}',
     room_overlay: '请选择需要清洁的房间',
     zone_overlay_create: '点击地图添加划区清洁区域',
-    zone_overlay_resize: '拖动边角调整大小，点击其他空白处重新放置',
+    zone_overlay_resize: '拖动边缘调整大小，点击地图添加另一个区域',
     clear_zone: '清除选区',
     switch_to_list: '切换到列表视图',
     switch_to_map: '切换到地图视图',

@@ -2,6 +2,11 @@ import type { Theme, ThemeColors, CustomThemeConfig, ThemeType } from './types';
 import { lightTheme } from './light';
 import { darkTheme } from './dark';
 
+export function resolveThemeType(configTheme: string | undefined, darkMode: boolean | undefined): ThemeType {
+  if (configTheme === 'light' || configTheme === 'dark' || configTheme === 'custom') return configTheme;
+  return darkMode ? 'dark' : 'light';
+}
+
 /**
  * Get a theme by type
  */

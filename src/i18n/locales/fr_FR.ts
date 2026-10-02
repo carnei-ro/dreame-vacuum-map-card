@@ -26,10 +26,13 @@ export const fr_FR: Translation = {
   // Vacuum map
   vacuum_map: {
     no_map: 'Aucune carte disponible',
+    diagnostic_no_camera: 'Caméra de la carte manquante',
+    diagnostic_no_rooms: 'Cette carte n’a pas de pièces',
+    diagnostic_bad_calibration: 'Calibrage de la carte manquant',
     looking_for: 'Recherche de : {{entity}}',
     room_overlay: 'Cliquez sur les numéros pour sélectionner les pièces à nettoyer',
     zone_overlay_create: 'Cliquez sur la carte pour placer une zone de nettoyage',
-    zone_overlay_resize: 'Faites glisser les coins pour redimensionner, cliquez ailleurs pour repositionner',
+    zone_overlay_resize: 'Faites glisser les bords pour redimensionner. Cliquez sur la carte pour ajouter une zone.',
     clear_zone: 'Effacer la zone',
     switch_to_list: 'Passer à la vue liste',
     switch_to_map: 'Passer à la vue carte',

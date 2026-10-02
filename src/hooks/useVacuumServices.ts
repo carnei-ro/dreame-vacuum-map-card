@@ -3,7 +3,7 @@ import type { Hass, CleaningSelectionMode, Zone, StopAction } from '@/types/home
 import type { RoomCleaningConfig } from '@/types/vacuum';
 import type { MapTransform } from '@/utils/mapTransform';
 import { useTranslation } from './useTranslation';
-import { convertUIZoneToVacuumZone } from '@/utils/zoneConverter';
+import { buildCleanZonePayload } from '@/utils/zoneConverter';
 import { logger } from '@/utils/logger';
 
 interface VacuumServicesParams {
@@ -199,9 +199,9 @@ export function useVacuumServices({
   );
 
   const handleCleanZone = useCallback(
-    async (zone: Zone, imageWidth: number, imageHeight: number, repeats: number = 1) => {
-      logger.debug('Vacuum', 'Clean zone - input:', {
-        uiZone: zone,
+    async (zones: Zone[], imageWidth: number, imageHeight: number, repeats: number = 1) => {
+      logger.debug('Vacuum', 'Clean zones - input:', {
+        uiZones: zones,
         imageWidth,
         imageHeight,
         mapEntityId,
@@ -209,7 +209,7 @@ export function useVacuumServices({
         transformSource: mapTransform?.source,
       });
 
-      const conversion = convertUIZoneToVacuumZone(zone, mapTransform, imageWidth, imageHeight);
+      const conversion = buildCleanZonePayload(zones, mapTransform, imageWidth, imageHeight);
       if (!conversion.ok) {
         logger.warn('Vacuum', 'Zone conversion blocked', {
           reason: conversion.reason,
@@ -220,7 +220,7 @@ export function useVacuumServices({
         return;
       }
 
-      logger.debug('Vacuum', 'Clean zone - converted:', conversion.zone);
+      logger.debug('Vacuum', 'Clean zones - converted:', conversion.zones);
 
       const success = await safeCallService(
         hass,
@@ -228,7 +228,7 @@ export function useVacuumServices({
         'vacuum_clean_zone',
         {
           entity_id: entityId,
-          zone: [conversion.zone.x1, conversion.zone.y1, conversion.zone.x2, conversion.zone.y2],
+          zone: conversion.zones,
           repeats,
         },
         onError,
@@ -245,7 +245,7 @@ export function useVacuumServices({
     (
       mode: CleaningSelectionMode,
       selectedRooms: Map<number, string>,
-      selectedZone: Zone | null,
+      selectedZones: Zone[],
       imageWidth?: number,
       imageHeight?: number,
       repeats: number = 1,
@@ -254,7 +254,7 @@ export function useVacuumServices({
       logger.debug('Vacuum', 'Handle clean', {
         mode,
         selectedRooms: Array.from(selectedRooms.entries()),
-        selectedZone,
+        selectedZones,
         imageWidth,
         imageHeight,
         repeats,
@@ -291,10 +291,10 @@ export function useVacuumServices({
           }
           break;
         case 'zone':
-          if (selectedZone && imageWidth && imageHeight) {
-            handleCleanZone(selectedZone, imageWidth, imageHeight, repeats);
-          } else if (selectedZone) {
-            logger.debug('Vacuum', 'Zone selected but no image dimensions');
+          if (selectedZones.length > 0 && imageWidth && imageHeight) {
+            handleCleanZone(selectedZones, imageWidth, imageHeight, repeats);
+          } else if (selectedZones.length > 0) {
+            logger.debug('Vacuum', 'Zones selected but no image dimensions');
             onSuccess?.(t('toast.cannot_determine_map'));
           } else {
             logger.debug('Vacuum', 'No zone selected');

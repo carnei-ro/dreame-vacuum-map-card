@@ -26,10 +26,13 @@ export const he: Translation = {
   // מפת שואב
   vacuum_map: {
     no_map: 'אין מפה זמינה',
+    diagnostic_no_camera: 'מצלמת המפה חסרה',
+    diagnostic_no_rooms: 'במפה זו אין חדרים',
+    diagnostic_bad_calibration: 'כיול המפה חסר',
     looking_for: 'מחפש את: {{entity}}',
     room_overlay: 'לחץ על מספרי החדרים כדי לבחור חדרים לניקוי',
     zone_overlay_create: 'לחץ על המפה כדי להוסיף אזור ניקוי',
-    zone_overlay_resize: 'גרור את הפינות לשינוי גודל, לחץ במקום אחר לשינוי מיקום',
+    zone_overlay_resize: 'גררו את הקצוות לשינוי גודל. לחצו על המפה כדי להוסיף אזור נוסף.',
     clear_zone: 'נקה אזור',
     switch_to_list: 'עבור לתצוגת רשימה',
     switch_to_map: 'עבור לתצוגת מפה',

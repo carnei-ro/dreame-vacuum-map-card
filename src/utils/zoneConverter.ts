@@ -70,3 +70,20 @@ export function convertUIZoneToVacuumZone(
 
   return { ok: true, zone: { x1, y1, x2, y2 } };
 }
+
+export type CleanZonePayload = { ok: true; zones: number[][] } | { ok: false; reason: ZoneConversionFailure };
+
+export function buildCleanZonePayload(
+  zones: UIZone[],
+  transform: MapTransform | null,
+  imageWidth: number,
+  imageHeight: number
+): CleanZonePayload {
+  const payload: number[][] = [];
+  for (const zone of zones) {
+    const converted = convertUIZoneToVacuumZone(zone, transform, imageWidth, imageHeight);
+    if (!converted.ok) return converted;
+    payload.push([converted.zone.x1, converted.zone.y1, converted.zone.x2, converted.zone.y2]);
+  }
+  return { ok: true, zones: payload };
+}

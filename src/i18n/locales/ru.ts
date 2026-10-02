@@ -26,10 +26,13 @@ export const ru: Translation = {
   // Vacuum Map
   vacuum_map: {
     no_map: 'Нет доступной карты',
+    diagnostic_no_camera: 'Камера карты отсутствует',
+    diagnostic_no_rooms: 'На этой карте нет комнат',
+    diagnostic_bad_calibration: 'Калибровка карты отсутствует',
     looking_for: 'Обнаружение: {{entity}}',
     room_overlay: 'Кликните на номера комнат чтобы выбрать комнаты для убокри',
     zone_overlay_create: 'Кликните на карту для добавления зоны уборки',
-    zone_overlay_resize: 'Потяните за углы для изменения размеры, кликните на любом месте для новой зоны',
+    zone_overlay_resize: 'Потяните за края, чтобы изменить размер. Нажмите на карту, чтобы добавить ещё зону.',
     clear_zone: 'Уборка зоны',
     switch_to_list: 'Переключить на список',
     switch_to_map: 'Переключить на карту',

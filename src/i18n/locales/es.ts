@@ -26,10 +26,13 @@ export const es: Translation = {
   // Vacuum Map
   vacuum_map: {
     no_map: 'No hay mapa disponible',
+    diagnostic_no_camera: 'Falta la cámara del mapa',
+    diagnostic_no_rooms: 'Este mapa no tiene habitaciones',
+    diagnostic_bad_calibration: 'Falta la calibración del mapa',
     looking_for: 'Buscando: {{entity}}',
     room_overlay: 'Haga clic en los números de las habitaciones para seleccionarlas para la limpieza',
     zone_overlay_create: 'Haga clic en el mapa para colocar una zona de limpieza',
-    zone_overlay_resize: 'Arrastre las esquinas para cambiar el tamaño, haga clic en otro lugar para reposicionar',
+    zone_overlay_resize: 'Arrastre los bordes para cambiar el tamaño. Haga clic en el mapa para añadir otra zona.',
     clear_zone: 'Borrar zona',
     switch_to_list: 'Cambiar a vista de lista',
     switch_to_map: 'Cambiar a vista de mapa',

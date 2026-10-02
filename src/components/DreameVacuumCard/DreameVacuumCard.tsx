@@ -26,8 +26,10 @@ import {
   resolveMapEntityId,
   readLiveMapFloor,
   resolveCleaningSelection,
+  mapDiagnostic,
 } from '@/utils';
 import { isRtlLanguage, resolveChromeLanguage } from '@/i18n';
+import { resolveThemeType } from '@/themes/utils';
 import { VacuumCardProvider } from '@/contexts';
 import { CAPABILITY } from '@/constants';
 import type { Hass, HassConfig } from '@/types/homeassistant';
@@ -45,7 +47,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   const entity = hass.states[config.entity];
   const deviceEntities = useLoadDeviceEntities(hass, config.entity);
   logger.debug('DreameVacuumCard', 'Loaded entity', entity);
-  const themeType = config.theme || 'light';
+  const themeType = resolveThemeType(config.theme, hass.themes?.darkMode);
   const language = resolveChromeLanguage(config.language, hass.language);
   const isRtl = isRtlLanguage(language);
   const { t } = useTranslation(language);
@@ -68,14 +70,14 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   const {
     selectedMode,
     selectedRooms,
-    selectedZone,
+    selectedZones,
     modalOpened,
     shortcutsModalOpened,
     settingsPanelOpened,
     repeatCount,
     setSelectedMode,
     setSelectedRooms,
-    setSelectedZone,
+    setSelectedZones,
     setModalOpened,
     setShortcutsModalOpened,
     setSettingsPanelOpened,
@@ -122,7 +124,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
       activeSegments,
     });
 
-    if (update.clearZone) setSelectedZone(null);
+    if (update.clearZone) setSelectedZones([]);
     if (update.rooms) {
       logger.debug('DreameVacuumCard', 'Updating room selection for the current floor', [...update.rooms.keys()]);
       setSelectedRooms(update.rooms);
@@ -138,7 +140,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     mapEntityId,
     selectedRooms,
     setSelectedRooms,
-    setSelectedZone,
+    setSelectedZones,
     setSelectedMode,
   ]);
 
@@ -187,12 +189,12 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     handleClean(
       selectedMode,
       selectedRooms,
-      selectedZone,
+      selectedZones,
       imageDimensions?.width,
       imageDimensions?.height,
       repeatCount
     );
-  }, [selectedMode, selectedRooms, selectedZone, imageDimensions, repeatCount, handleClean]);
+  }, [selectedMode, selectedRooms, selectedZones, imageDimensions, repeatCount, handleClean]);
 
   // Handle resume (just calls start)
   const handleResume = useCallback(() => {
@@ -239,15 +241,16 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
 
   // Check for shortcuts capability
   const hasShortcuts = (entity.attributes.capabilities ?? []).includes(CAPABILITY.SHORTCUTS);
+  const diagnostic = mapDiagnostic({
+    hasCamera: Boolean(mapEntityId && hass.states[mapEntityId]),
+    floorReady: mapFloor.floorReady,
+    imageReady: mapFloor.imageReady,
+    roomCount: displayedGeometry.rooms.length,
+    hasTransform: displayedGeometry.transform !== null,
+  });
 
   return (
-    <VacuumCardProvider
-      hass={hass}
-      entity={entity}
-      config={config}
-      language={language}
-      deviceEntities={deviceEntities}
-    >
+    <VacuumCardProvider hass={hass} entity={entity} config={config} language={language} deviceEntities={deviceEntities}>
       <div
         ref={containerRef}
         className={`dreame-vacuum-card dreame-vacuum-card--${theme.name}`}
@@ -259,14 +262,16 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
 
           <MapSelector />
 
+          {diagnostic && <p className="dreame-vacuum-card__diagnostic">{t(`vacuum_map.diagnostic_${diagnostic}`)}</p>}
+
           <VacuumMap
             mapEntityId={mapEntityId}
             geometry={displayedGeometry}
             selectedMode={selectedMode}
             selectedRooms={selectedRooms}
             onRoomToggle={handleRoomToggleWithToast}
-            zone={mapReady ? selectedZone : null}
-            onZoneChange={setSelectedZone}
+            zone={mapReady ? selectedZones : []}
+            onZoneChange={setSelectedZones}
             onImageDimensionsChange={handleImageDimensionsChange}
             defaultRoomView={config.default_room_view}
           />

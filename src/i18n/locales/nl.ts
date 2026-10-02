@@ -26,10 +26,13 @@ export const nl: Translation = {
   // Stofzuiger Kaart
   vacuum_map: {
     no_map: 'Geen kaart beschikbaar',
+    diagnostic_no_camera: 'Kaartcamera ontbreekt',
+    diagnostic_no_rooms: 'Deze kaart heeft geen kamers',
+    diagnostic_bad_calibration: 'Kaartkalibratie ontbreekt',
     looking_for: 'Zoeken naar: {{entity}}',
     room_overlay: 'Klik op kamernummers om kamers te selecteren voor reiniging',
     zone_overlay_create: 'Klik op de kaart om een schoonmaakzone te plaatsen',
-    zone_overlay_resize: 'Sleep de hoeken om aan te passen, klik elders om te verplaatsen',
+    zone_overlay_resize: 'Sleep de randen om de grootte te wijzigen. Klik op de kaart om nog een zone toe te voegen.',
     clear_zone: 'Zone wissen',
     switch_to_list: 'Naar lijstweergave',
     switch_to_map: 'Naar kaartweergave',

@@ -5,8 +5,8 @@ import { useMachineState } from '@/contexts';
 import { logger } from '@/utils/logger';
 
 interface ZoneOverlayProps {
-  zone: Zone | null;
-  onZoneChange: (zone: Zone | null) => void;
+  zones: Zone[];
+  onZonesChange: (zones: Zone[]) => void;
   clearZoneLabel: string;
   contentRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -18,11 +18,12 @@ type ResizeHandle = 'top' | 'right' | 'bottom' | 'left' | null;
  * Handles zone creation (click) and resizing (drag edge handles).
  * The zone rectangle pans/zooms with the map content.
  */
-export function ZoneOverlay({ zone, onZoneChange, clearZoneLabel, contentRef }: ZoneOverlayProps) {
+export function ZoneOverlay({ zones, onZonesChange, clearZoneLabel, contentRef }: ZoneOverlayProps) {
   const transformContext = useTransformContext();
   const { phase } = useMachineState();
   const isInCleaningSession = phase === 'cleaning' || phase === 'paused';
   const [resizingHandle, setResizingHandle] = useState<ResizeHandle>(null);
+  const [resizingIndex, setResizingIndex] = useState<number | null>(null);
 
   // Track scale reactively to counter-scale handles for consistent visual size
   const [scale, setScale] = useState(transformContext.state.scale);
@@ -75,16 +76,18 @@ export function ZoneOverlay({ zone, onZoneChange, clearZoneLabel, contentRef }: 
       };
 
       logger.debug('Zone', 'Created at click:', coords, newZone);
-      onZoneChange(newZone);
+      onZonesChange([...zones, newZone]);
     },
-    [getContentCoordinates, onZoneChange, resizingHandle]
+    [getContentCoordinates, onZonesChange, resizingHandle, zones]
   );
 
-  const handleResizeStart = (e: React.MouseEvent | React.TouchEvent, handle: ResizeHandle) => {
-    e.stopPropagation();
-    e.preventDefault();
+  const handleResizeStart = (event: React.MouseEvent | React.TouchEvent, index: number, handle: ResizeHandle) => {
+    event.stopPropagation();
+    event.preventDefault();
+    const zone = zones[index];
     if (!zone) return;
 
+    setResizingIndex(index);
     setResizingHandle(handle);
     setResizeStartZone(zone);
   };
@@ -122,20 +125,23 @@ export function ZoneOverlay({ zone, onZoneChange, clearZoneLabel, contentRef }: 
           break;
       }
 
-      onZoneChange(newZone);
+      if (resizingIndex === null) return;
+      onZonesChange(zones.map((existing, index) => (index === resizingIndex ? newZone : existing)));
     },
-    [resizingHandle, resizeStartZone, getContentCoordinates, onZoneChange]
+    [resizingHandle, resizingIndex, resizeStartZone, getContentCoordinates, onZonesChange, zones]
   );
 
   const handleResizeEnd = useCallback(() => {
     setResizingHandle(null);
+    setResizingIndex(null);
     setResizeStartZone(null);
   }, []);
 
-  const handleClearZone = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onZoneChange(null);
+  const handleClearZone = (event: React.MouseEvent, index: number) => {
+    event.stopPropagation();
+    onZonesChange(zones.filter((_, zoneIndex) => zoneIndex !== index));
     setResizingHandle(null);
+    setResizingIndex(null);
     setResizeStartZone(null);
   };
 
@@ -150,8 +156,9 @@ export function ZoneOverlay({ zone, onZoneChange, clearZoneLabel, contentRef }: 
       onTouchEnd={handleResizeEnd}
       onTouchCancel={handleResizeEnd}
     >
-      {zone && (
+      {zones.map((zone, index) => (
         <div
+          key={`${zone.x1}-${zone.y1}-${zone.x2}-${zone.y2}-${index}`}
           className="vacuum-map__zone"
           style={{
             left: `${zone.x1}%`,
@@ -159,42 +166,42 @@ export function ZoneOverlay({ zone, onZoneChange, clearZoneLabel, contentRef }: 
             width: `${zone.x2 - zone.x1}%`,
             height: `${zone.y2 - zone.y1}%`,
           }}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(event) => event.stopPropagation()}
         >
           {!isInCleaningSession && (
             <>
               <div
                 className="vacuum-map__zone-handle vacuum-map__zone-handle--top"
                 style={{ transform: `translateX(-50%) scale(${handleScale})` }}
-                onMouseDown={(e) => handleResizeStart(e, 'top')}
-                onTouchStart={(e) => handleResizeStart(e, 'top')}
+                onMouseDown={(event) => handleResizeStart(event, index, 'top')}
+                onTouchStart={(event) => handleResizeStart(event, index, 'top')}
                 title="Resize"
               />
               <div
                 className="vacuum-map__zone-handle vacuum-map__zone-handle--right"
                 style={{ transform: `translateY(-50%) scale(${handleScale})` }}
-                onMouseDown={(e) => handleResizeStart(e, 'right')}
-                onTouchStart={(e) => handleResizeStart(e, 'right')}
+                onMouseDown={(event) => handleResizeStart(event, index, 'right')}
+                onTouchStart={(event) => handleResizeStart(event, index, 'right')}
                 title="Resize"
               />
               <div
                 className="vacuum-map__zone-handle vacuum-map__zone-handle--bottom"
                 style={{ transform: `translateX(-50%) scale(${handleScale})` }}
-                onMouseDown={(e) => handleResizeStart(e, 'bottom')}
-                onTouchStart={(e) => handleResizeStart(e, 'bottom')}
+                onMouseDown={(event) => handleResizeStart(event, index, 'bottom')}
+                onTouchStart={(event) => handleResizeStart(event, index, 'bottom')}
                 title="Resize"
               />
               <div
                 className="vacuum-map__zone-handle vacuum-map__zone-handle--left"
                 style={{ transform: `translateY(-50%) scale(${handleScale})` }}
-                onMouseDown={(e) => handleResizeStart(e, 'left')}
-                onTouchStart={(e) => handleResizeStart(e, 'left')}
+                onMouseDown={(event) => handleResizeStart(event, index, 'left')}
+                onTouchStart={(event) => handleResizeStart(event, index, 'left')}
                 title="Resize"
               />
               <button
                 className="vacuum-map__zone-clear"
                 style={{ transform: `scale(${handleScale})` }}
-                onClick={handleClearZone}
+                onClick={(event) => handleClearZone(event, index)}
                 title={clearZoneLabel}
               >
                 ×
@@ -202,7 +209,7 @@ export function ZoneOverlay({ zone, onZoneChange, clearZoneLabel, contentRef }: 
             </>
           )}
         </div>
-      )}
+      ))}
     </div>
   );
 }

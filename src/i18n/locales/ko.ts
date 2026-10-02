@@ -26,10 +26,13 @@ export const ko: Translation = {
   // Vacuum Map
   vacuum_map: {
     no_map: '사용 가능한 맵이 없습니다',
+    diagnostic_no_camera: '지도 카메라가 없습니다',
+    diagnostic_no_rooms: '이 지도에는 방이 없습니다',
+    diagnostic_bad_calibration: '지도 보정 정보가 없습니다',
     looking_for: '검색 중: {{entity}}',
     room_overlay: '방 번호를 클릭하여 청소할 방을 선택하세요',
     zone_overlay_create: '맵을 클릭하여 청소 구역을 지정하세요',
-    zone_overlay_resize: '모서리를 드래그하여 크기를 조절하거나, 다른 곳을 클릭하여 위치를 이동하세요',
+    zone_overlay_resize: '가장자리를 끌어 크기를 조절하세요. 지도를 눌러 구역을 추가하세요.',
     clear_zone: '구역 지우기',
     switch_to_list: '목록 보기로 전환',
     switch_to_map: '맵 보기로 전환',

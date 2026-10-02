@@ -13,6 +13,16 @@
     font-size: 0.875rem;
   }
 
+  &__diagnostic {
+    margin: 0 1.25rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    background: var(--surface-secondary, rgba(0, 0, 0, 0.06));
+    color: var(--text-secondary, #666);
+    font-size: 0.8125rem;
+    text-align: center;
+  }
+
   &__container {
     display: flex;
     flex-direction: column;

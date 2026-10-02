@@ -24,10 +24,13 @@ export const en = {
   // Vacuum Map
   vacuum_map: {
     no_map: 'No map available',
+    diagnostic_no_camera: 'Map camera is missing',
+    diagnostic_no_rooms: 'This map has no rooms',
+    diagnostic_bad_calibration: 'Map calibration is missing',
     looking_for: 'Looking for: {{entity}}',
     room_overlay: 'Click on room numbers to select rooms for cleaning',
     zone_overlay_create: 'Click on the map to place a cleaning zone',
-    zone_overlay_resize: 'Drag corners to resize, click elsewhere to reposition',
+    zone_overlay_resize: 'Drag edges to resize. Click the map to add another zone.',
     clear_zone: 'Clear zone',
     switch_to_list: 'Switch to list view',
     switch_to_map: 'Switch to map view',
