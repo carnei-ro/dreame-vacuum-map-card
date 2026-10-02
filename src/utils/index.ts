@@ -10,6 +10,7 @@ export * from './entityHelpers';
 export * from './zoneConverter';
 export * from './roomParser';
 export * from './mapTransform';
+export * from './mapFloor';
 export * from './typeGuards';
 export * from './logger';
 export * from './deviceEntities';

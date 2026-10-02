@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { CircularButton, Accordion } from '@/components/common';
 import { useTranslation, useRoomSettings, getEntityState } from '@/hooks';
 import { useHass, useIsRtl, useConfig, useDeviceEntities } from '@/contexts';
-import { parseRoomsFromCamera, resolveMapEntityId } from '@/utils';
+import { parseRoomsFromCamera, resolveMapEntityId, readLiveMapFloor } from '@/utils';
 import {
   SUCTION_QUIET_ICON_SVG,
   SUCTION_STANDARD_ICON_SVG,
@@ -304,7 +304,9 @@ export function CustomizeMode() {
   const { get } = useDeviceEntities();
 
   const mapEntityId = resolveMapEntityId(config.map_entity, get('camera', 'map'));
-  const rooms = mapEntityId ? parseRoomsFromCamera(hass, mapEntityId, config.room_names) : [];
+  const camera = mapEntityId ? hass.states[mapEntityId] : undefined;
+  const mapFloor = readLiveMapFloor(hass.states[config.entity]?.attributes.selected_map_id, camera?.attributes);
+  const rooms = mapEntityId && mapFloor.floorReady ? parseRoomsFromCamera(hass, mapEntityId, config.room_names) : [];
 
   const { roomSettings, setSuctionLevel, setWetnessLevel, setCleaningTimes, setMopPressure, setMopTemperature } =
     useRoomSettings({

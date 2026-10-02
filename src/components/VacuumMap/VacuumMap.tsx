@@ -21,7 +21,7 @@ interface VacuumMapProps {
   onRoomToggle: (roomId: number, roomName: string) => void;
   zone: Zone | null;
   onZoneChange: (zone: Zone | null) => void;
-  onImageDimensionsChange?: (width: number, height: number) => void;
+  onImageDimensionsChange?: (width: number, height: number, imageToken: string) => void;
   defaultRoomView?: RoomViewMode;
 }
 
@@ -84,11 +84,17 @@ export function VacuumMap({
   const { phase } = useMachineState();
   const isInCleaningSession = phase === 'cleaning' || phase === 'paused';
   const mapEntity = hass.states[mapEntityId];
-  const mapUrl = mapEntity?.attributes?.entity_picture;
+  const entityPicture = mapEntity?.attributes?.entity_picture;
+  const mapUrl = typeof entityPicture === 'string' ? entityPicture : undefined;
   const mapRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const resetTransformRef = useRef<(() => void) | null>(null);
   const [imageDimensions, setImageDimensions] = useState({ width: 0, height: 0 });
+  const [loadedMapUrl, setLoadedMapUrl] = useState(mapUrl);
+  if (mapUrl !== loadedMapUrl) {
+    setLoadedMapUrl(mapUrl);
+    setImageDimensions({ width: 0, height: 0 });
+  }
   const [roomViewMode, setRoomViewMode] = useState<RoomViewMode>(defaultRoomView);
 
   // Map lock state - persisted to localStorage, default: locked
@@ -142,12 +148,11 @@ export function VacuumMap({
   const handleImageLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
       const img = e.currentTarget;
-      if (img.naturalWidth && img.naturalHeight) {
-        setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
-        onImageDimensionsChange?.(img.naturalWidth, img.naturalHeight);
-      }
+      if (!mapUrl || !img.naturalWidth || !img.naturalHeight) return;
+      setImageDimensions({ width: img.naturalWidth, height: img.naturalHeight });
+      onImageDimensionsChange?.(img.naturalWidth, img.naturalHeight, mapUrl);
     },
-    [onImageDimensionsChange]
+    [mapUrl, onImageDimensionsChange]
   );
 
   // Determine if panning should be enabled (disabled when locked or in zone mode for zone creation)

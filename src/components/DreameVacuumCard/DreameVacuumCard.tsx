@@ -18,7 +18,15 @@ import {
   useMapGeometry,
   useLoadDeviceEntities,
 } from '@/hooks';
-import { extractEntityData, getEffectiveCleaningMode, getAttr, getActiveSegments, resolveMapEntityId } from '@/utils';
+import {
+  extractEntityData,
+  getEffectiveCleaningMode,
+  getAttr,
+  getActiveSegments,
+  resolveMapEntityId,
+  readLiveMapFloor,
+  resolveCleaningSelection,
+} from '@/utils';
 import { isRtlLanguage } from '@/i18n';
 import { VacuumCardProvider } from '@/contexts';
 import { CAPABILITY } from '@/constants';
@@ -53,8 +61,9 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     containerRef,
   });
 
-  // Track map image dimensions
+  // Track map image dimensions and the picture token those dimensions belong to
   const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [loadedImageToken, setLoadedImageToken] = useState<string | null>(null);
 
   // State management
   const {
@@ -78,6 +87,13 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   } = useCardUIState({ defaultMode: config.default_mode });
 
   const mapEntityId = resolveMapEntityId(config.map_entity, deviceEntities.get('camera', 'map'));
+  const cameraAttributes = mapEntityId ? hass.states[mapEntityId]?.attributes : undefined;
+  const mapFloor = readLiveMapFloor(entity?.attributes.selected_map_id, cameraAttributes, loadedImageToken);
+  const mapReady = mapFloor.floorReady && mapFloor.imageReady;
+  if (imageDimensions && mapFloor.imageToken !== loadedImageToken) {
+    setImageDimensions(null);
+  }
+
   const mapGeometry = useMapGeometry({
     hass,
     mapEntityId,
@@ -85,30 +101,37 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     imageHeight: imageDimensions?.height ?? 0,
     roomNames: config.room_names,
   });
+  const displayedGeometry = mapReady ? mapGeometry : { rooms: [], rotation: mapGeometry.rotation, transform: null };
 
   // Check if vacuum is actively cleaning (state === 'cleaning' or started attribute)
   const isCleaning = entity ? entity.state === 'cleaning' || getAttr(entity.attributes.started, false) : false;
   const isSegmentCleaning = entity ? entity.attributes.segment_cleaning === true : false;
 
-  // Sync room selection with active segments when segment cleaning is in progress
-  // This ensures the UI reflects the actual cleaning state after a refresh
+  const acceptedFloorId = useRef<number | null | undefined>(undefined);
   useEffect(() => {
-    if (!isSegmentCleaning) return;
+    const floorChanged = acceptedFloorId.current !== undefined && acceptedFloorId.current !== mapFloor.floorId;
+    if (acceptedFloorId.current === undefined || floorChanged) {
+      acceptedFloorId.current = mapFloor.floorId;
+    }
 
     const activeSegments = getActiveSegments(hass, config.entity, mapEntityId, config.room_names);
-    if (activeSegments.size > 0) {
-      // Only update if different from current selection
-      const currentIds = Array.from(selectedRooms.keys()).sort();
-      const activeIds = Array.from(activeSegments.keys()).sort();
-      const isDifferent = currentIds.length !== activeIds.length || currentIds.some((id, i) => id !== activeIds[i]);
+    const update = resolveCleaningSelection({
+      floorChanged,
+      mapReady,
+      isSegmentCleaning,
+      selectedRooms,
+      activeSegments,
+    });
 
-      if (isDifferent) {
-        logger.debug('DreameVacuumCard', 'Syncing room selection with active segments', activeIds);
-        setSelectedRooms(activeSegments);
-        setSelectedMode('room');
-      }
+    if (update.clearZone) setSelectedZone(null);
+    if (update.rooms) {
+      logger.debug('DreameVacuumCard', 'Updating room selection for the current floor', [...update.rooms.keys()]);
+      setSelectedRooms(update.rooms);
     }
+    if (update.selectRoomMode) setSelectedMode('room');
   }, [
+    mapFloor.floorId,
+    mapReady,
     isSegmentCleaning,
     hass,
     config.entity,
@@ -116,6 +139,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     mapEntityId,
     selectedRooms,
     setSelectedRooms,
+    setSelectedZone,
     setSelectedMode,
   ]);
 
@@ -142,7 +166,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     hass,
     entityId: config.entity,
     mapEntityId,
-    mapTransform: mapGeometry.transform,
+    mapTransform: displayedGeometry.transform,
     onSuccess: showToast,
     onError: showError,
   });
@@ -186,10 +210,10 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   const handleShortcutsClose = useCallback(() => setShortcutsModalOpened(false), [setShortcutsModalOpened]);
 
   // Memoized handler for image dimensions
-  const handleImageDimensionsChange = useCallback(
-    (width: number, height: number) => setImageDimensions({ width, height }),
-    []
-  );
+  const handleImageDimensionsChange = useCallback((width: number, height: number, imageToken: string) => {
+    setLoadedImageToken(imageToken);
+    setImageDimensions({ width, height });
+  }, []);
 
   // Error handling
   if (!entity) {
@@ -238,11 +262,11 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
 
           <VacuumMap
             mapEntityId={mapEntityId}
-            geometry={mapGeometry}
+            geometry={displayedGeometry}
             selectedMode={selectedMode}
             selectedRooms={selectedRooms}
             onRoomToggle={handleRoomToggleWithToast}
-            zone={selectedZone}
+            zone={mapReady ? selectedZone : null}
             onZoneChange={setSelectedZone}
             onImageDimensionsChange={handleImageDimensionsChange}
             defaultRoomView={config.default_room_view}
