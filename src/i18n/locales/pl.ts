@@ -218,6 +218,7 @@ export const pl: Translation = {
     entity_not_found: 'Nie znaleziono encji: {{entity}}',
     failed_to_load: 'Nie udało się załadować danych encji',
     service_call_failed: 'Nie udało się wysłać polecenia do odkurzacza',
+    map_transform_unavailable: 'Współrzędne mapy są niedostępne. Czyszczenie strefy nie zostało uruchomione.',
     entity_unavailable: 'Odkurzacz niedostępny',
   },
 

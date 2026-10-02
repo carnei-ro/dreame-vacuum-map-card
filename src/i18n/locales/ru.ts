@@ -219,6 +219,7 @@ export const ru: Translation = {
     entity_not_found: 'Сущность не найдена: {{entity}}',
     failed_to_load: 'Не удалось загрузить данные сущности',
     service_call_failed: 'Не удалось отправить команду пылесосу',
+    map_transform_unavailable: 'Координаты карты недоступны. Зональная уборка не запущена.',
     entity_unavailable: 'Пылесос недоступен',
   },
 

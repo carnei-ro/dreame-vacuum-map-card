@@ -21,8 +21,10 @@ export {
 } from './useEntityState';
 export { useVacuumCapabilities } from './useVacuumCapabilities';
 export { useVacuumMachineState } from './useVacuumMachineState';
+export { useMapGeometry } from './useMapGeometry';
 export type { VacuumEntityIds } from './useVacuumEntityIds';
 export type { RoomSetting } from './useRoomSettings';
 export type { EntityState } from './useEntityState';
 export type { VacuumCapabilities } from './useVacuumCapabilities';
 export type { VacuumMachineState, VacuumControls } from './useVacuumMachineState';
+export type { MapGeometry } from './useMapGeometry';

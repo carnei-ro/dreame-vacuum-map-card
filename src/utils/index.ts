@@ -9,5 +9,6 @@ export * from './helpers';
 export * from './entityHelpers';
 export * from './zoneConverter';
 export * from './roomParser';
+export * from './mapTransform';
 export * from './typeGuards';
 export * from './logger';

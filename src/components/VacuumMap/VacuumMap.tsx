@@ -1,15 +1,8 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { TransformWrapper, TransformComponent, useControls } from 'react-zoom-pan-pinch';
-import type {
-  CleaningSelectionMode,
-  Zone,
-  CalibrationPoint,
-  RoomViewMode,
-  VacuumPosition,
-} from '@/types/homeassistant';
-import { useTranslation } from '@/hooks';
+import type { CleaningSelectionMode, Zone, RoomViewMode, VacuumPosition } from '@/types/homeassistant';
+import { useTranslation, type MapGeometry } from '@/hooks';
 import { useHass, useMachineState, useConfig } from '@/contexts';
-import { parseRoomsFromCamera } from '@/utils/roomParser';
 import { STORAGE_KEY } from '@/constants';
 import { RoomSegments } from './RoomSegments';
 import { MapControls } from './MapControls';
@@ -22,6 +15,7 @@ import './VacuumMap.scss';
 
 interface VacuumMapProps {
   mapEntityId: string;
+  geometry: MapGeometry;
   selectedMode: CleaningSelectionMode;
   selectedRooms: Map<number, string>;
   onRoomToggle: (roomId: number, roomName: string) => void;
@@ -75,6 +69,7 @@ function MapControlsWrapper({
 
 export function VacuumMap({
   mapEntityId,
+  geometry,
   selectedMode,
   selectedRooms,
   onRoomToggle,
@@ -129,16 +124,7 @@ export function VacuumMap({
   // Effective view mode: use user selection only in room mode, otherwise default
   const effectiveRoomViewMode = selectedMode === 'room' ? roomViewMode : defaultRoomView;
 
-  // Memoize parsed rooms to avoid recalculation on every render
-  const parsedRooms = useMemo(
-    () => parseRoomsFromCamera(hass, mapEntityId, config.room_names),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hass.states[mapEntityId]?.attributes?.rooms, mapEntityId, config.room_names]
-  );
-  const calibrationPoints = (mapEntity?.attributes?.calibration_points as CalibrationPoint[] | undefined) ?? [];
-
-  // Extract map rotation from camera entity (0, 90, 180, or 270 degrees)
-  const mapRotation = (mapEntity?.attributes?.rotation as 0 | 90 | 180 | 270 | undefined) ?? 0;
+  const { rooms: parsedRooms, transform } = geometry;
 
   // Extract vacuum and charger positions from map entity attributes
   const vacuumPosition = mapEntity?.attributes?.vacuum_position as VacuumPosition | undefined;
@@ -149,9 +135,9 @@ export function VacuumMap({
 
   const overlays = config.map_overlays ?? [];
   const hasDimensions = imageDimensions.width > 0 && imageDimensions.height > 0;
-  const showVacuumMarker = overlays.includes('vacuum') && vacuumPosition && hasDimensions;
-  const showChargerMarker = overlays.includes('charger') && chargerPosition && hasDimensions;
-  const showRoomLabels = overlays.includes('room_labels') && hasDimensions;
+  const showVacuumMarker = overlays.includes('vacuum') && vacuumPosition && hasDimensions && transform;
+  const showChargerMarker = overlays.includes('charger') && chargerPosition && hasDimensions && transform;
+  const showRoomLabels = overlays.includes('room_labels') && hasDimensions && transform;
 
   const handleImageLoad = useCallback(
     (e: React.SyntheticEvent<HTMLImageElement>) => {
@@ -229,7 +215,7 @@ export function VacuumMap({
               {showChargerMarker && (
                 <ChargerMarker
                   position={chargerPosition}
-                  calibrationPoints={calibrationPoints}
+                  transform={transform}
                   imageWidth={imageDimensions.width}
                   imageHeight={imageDimensions.height}
                 />
@@ -238,7 +224,7 @@ export function VacuumMap({
               {showVacuumMarker && (
                 <VacuumPositionMarker
                   position={vacuumPosition}
-                  calibrationPoints={calibrationPoints}
+                  transform={transform}
                   imageWidth={imageDimensions.width}
                   imageHeight={imageDimensions.height}
                   isCleaning={isCleaning}
@@ -248,7 +234,7 @@ export function VacuumMap({
               {showRoomLabels && (
                 <RoomLabels
                   rooms={parsedRooms}
-                  calibrationPoints={calibrationPoints}
+                  transform={transform}
                   imageWidth={imageDimensions.width}
                   imageHeight={imageDimensions.height}
                   scale={config.room_label_scale}
@@ -259,15 +245,15 @@ export function VacuumMap({
                 effectiveRoomViewMode === 'map' &&
                 !isInCleaningSession &&
                 imageDimensions.width > 0 &&
-                imageDimensions.height > 0 && (
+                imageDimensions.height > 0 &&
+                transform && (
                   <RoomSegments
                     rooms={parsedRooms}
                     selectedRooms={selectedRooms}
                     onRoomToggle={onRoomToggle}
-                    calibrationPoints={calibrationPoints}
+                    transform={transform}
                     imageWidth={imageDimensions.width}
                     imageHeight={imageDimensions.height}
-                    rotation={mapRotation}
                   />
                 )}
 

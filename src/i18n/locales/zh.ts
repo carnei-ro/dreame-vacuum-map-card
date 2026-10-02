@@ -218,6 +218,7 @@ export const zh: Translation = {
     entity_not_found: '未找到实体：{{entity}}',
     failed_to_load: '加载实体数据失败',
     service_call_failed: '发送指令到扫地机失败',
+    map_transform_unavailable: '地图坐标不可用，未启动区域清扫。',
     entity_unavailable: '扫地机不可用',
   },
 

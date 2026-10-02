@@ -1,11 +1,11 @@
 import { useMemo } from 'react';
-import type { Room, CalibrationPoint } from '@/types/homeassistant';
-import { vacuumToMapCoordinates } from '@/utils/roomParser';
+import type { Room } from '@/types/homeassistant';
+import type { MapTransform } from '@/utils/mapTransform';
 import './RoomLabels.scss';
 
 interface RoomLabelsProps {
   rooms: Room[];
-  calibrationPoints: CalibrationPoint[];
+  transform: MapTransform;
   imageWidth: number;
   imageHeight: number;
   /** Scale factor for the label size, 1 = default. Clamped to a sane range. */
@@ -17,7 +17,7 @@ const BASE_FONT_RATIO = 0.025;
 const MIN_SCALE = 0.2;
 const MAX_SCALE = 3;
 
-export function RoomLabels({ rooms, calibrationPoints, imageWidth, imageHeight, scale = 1 }: RoomLabelsProps) {
+export function RoomLabels({ rooms, transform, imageWidth, imageHeight, scale = 1 }: RoomLabelsProps) {
   const safeScale = Number.isFinite(scale) ? Math.min(Math.max(scale, MIN_SCALE), MAX_SCALE) : 1;
   const fontSize = Math.max(imageWidth, imageHeight) * BASE_FONT_RATIO * safeScale;
   const paddingX = fontSize * 0.6;
@@ -36,10 +36,10 @@ export function RoomLabels({ rooms, calibrationPoints, imageWidth, imageHeight, 
       .map((room) => {
         const centerX = room.x ?? (room.x0! + room.x1!) / 2;
         const centerY = room.y ?? (room.y0! + room.y1!) / 2;
-        const pos = vacuumToMapCoordinates(centerX, centerY, calibrationPoints, imageWidth, imageHeight);
+        const pos = transform.vacuumToMap({ x: centerX, y: centerY });
         return { id: room.id, name: room.name, x: pos.x, y: pos.y };
       });
-  }, [rooms, calibrationPoints, imageWidth, imageHeight]);
+  }, [rooms, transform]);
 
   return (
     <svg className="room-labels" viewBox={`0 0 ${imageWidth} ${imageHeight}`} preserveAspectRatio="xMidYMid meet">

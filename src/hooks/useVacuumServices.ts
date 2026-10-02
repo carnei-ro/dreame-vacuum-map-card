@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import type { Hass, CleaningSelectionMode, Zone, StopAction } from '@/types/homeassistant';
 import type { RoomCleaningConfig } from '@/types/vacuum';
+import type { MapTransform } from '@/utils/mapTransform';
 import { useTranslation } from './useTranslation';
 import { convertUIZoneToVacuumZone } from '@/utils/zoneConverter';
 import { logger } from '@/utils/logger';
@@ -9,6 +10,7 @@ interface VacuumServicesParams {
   hass: Hass;
   entityId: string;
   mapEntityId: string;
+  mapTransform: MapTransform | null;
   onSuccess?: (message: string) => void;
   onError?: (message: string) => void;
 }
@@ -39,7 +41,14 @@ async function safeCallService(
 /**
  * Hook providing vacuum service operations
  */
-export function useVacuumServices({ hass, entityId, mapEntityId, onSuccess, onError }: VacuumServicesParams) {
+export function useVacuumServices({
+  hass,
+  entityId,
+  mapEntityId,
+  mapTransform,
+  onSuccess,
+  onError,
+}: VacuumServicesParams) {
   const { t } = useTranslation();
 
   const handleStart = useCallback(async () => {
@@ -191,21 +200,27 @@ export function useVacuumServices({ hass, entityId, mapEntityId, onSuccess, onEr
 
   const handleCleanZone = useCallback(
     async (zone: Zone, imageWidth: number, imageHeight: number, repeats: number = 1) => {
-      const mapEntity = hass.states[mapEntityId];
-
       logger.debug('Vacuum', 'Clean zone - input:', {
         uiZone: zone,
         imageWidth,
         imageHeight,
         mapEntityId,
         repeats,
-        calibrationPoints: mapEntity?.attributes?.calibration_points,
+        transformSource: mapTransform?.source,
       });
 
-      // Convert UI zone (percentage) to vacuum coordinates
-      const vacuumZone = convertUIZoneToVacuumZone(zone, mapEntity, imageWidth, imageHeight);
+      const conversion = convertUIZoneToVacuumZone(zone, mapTransform, imageWidth, imageHeight);
+      if (!conversion.ok) {
+        logger.warn('Vacuum', 'Zone conversion blocked', {
+          reason: conversion.reason,
+          mapEntityId,
+          transformSource: mapTransform?.source,
+        });
+        onError?.(t('errors.map_transform_unavailable'));
+        return;
+      }
 
-      logger.debug('Vacuum', 'Clean zone - converted:', vacuumZone);
+      logger.debug('Vacuum', 'Clean zone - converted:', conversion.zone);
 
       const success = await safeCallService(
         hass,
@@ -213,7 +228,7 @@ export function useVacuumServices({ hass, entityId, mapEntityId, onSuccess, onEr
         'vacuum_clean_zone',
         {
           entity_id: entityId,
-          zone: [vacuumZone.x1, vacuumZone.y1, vacuumZone.x2, vacuumZone.y2],
+          zone: [conversion.zone.x1, conversion.zone.y1, conversion.zone.x2, conversion.zone.y2],
           repeats,
         },
         onError,
@@ -223,7 +238,7 @@ export function useVacuumServices({ hass, entityId, mapEntityId, onSuccess, onEr
         onSuccess?.(t('toast.starting_zone_clean'));
       }
     },
-    [hass, entityId, mapEntityId, onSuccess, onError, t]
+    [hass, entityId, mapEntityId, mapTransform, onSuccess, onError, t]
   );
 
   const handleClean = useCallback(

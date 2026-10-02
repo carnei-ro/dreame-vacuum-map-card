@@ -218,6 +218,7 @@ export const fr_FR: Translation = {
     entity_not_found: 'Entité introuvable : {{entity}}',
     failed_to_load: "Échec du chargement des données de l'entité",
     service_call_failed: "Échec de l'envoi de la commande à l'aspirateur",
+    map_transform_unavailable: "Les coordonnées de la carte sont indisponibles. Le nettoyage de zone n'a pas démarré.",
     entity_unavailable: 'Aspirateur non disponible',
   },
 

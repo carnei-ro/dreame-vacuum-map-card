@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import type { VacuumPosition, CalibrationPoint } from '@/types/homeassistant';
-import { vacuumToMapCoordinates } from '@/utils/roomParser';
+import type { VacuumPosition } from '@/types/homeassistant';
+import type { MapTransform } from '@/utils/mapTransform';
 import './VacuumPositionMarker.scss';
 
 // MDI robot-vacuum icon path (viewBox 0 0 24 24)
@@ -9,7 +9,7 @@ const ROBOT_VACUUM_PATH =
 
 interface VacuumPositionMarkerProps {
   position: VacuumPosition;
-  calibrationPoints: CalibrationPoint[];
+  transform: MapTransform;
   imageWidth: number;
   imageHeight: number;
   isCleaning?: boolean;
@@ -21,14 +21,14 @@ interface VacuumPositionMarkerProps {
  */
 export function VacuumPositionMarker({
   position,
-  calibrationPoints,
+  transform,
   imageWidth,
   imageHeight,
   isCleaning = false,
 }: VacuumPositionMarkerProps) {
   const mapPosition = useMemo(() => {
-    return vacuumToMapCoordinates(position.x, position.y, calibrationPoints, imageWidth, imageHeight);
-  }, [position.x, position.y, calibrationPoints, imageWidth, imageHeight]);
+    return transform.vacuumToMap({ x: position.x, y: position.y });
+  }, [position.x, position.y, transform]);
 
   // Size of the marker relative to the map (the icon is 24x24 in its viewBox)
   const iconSize = Math.max(imageWidth, imageHeight) * 0.05; // 5% of map size

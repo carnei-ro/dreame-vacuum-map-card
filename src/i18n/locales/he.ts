@@ -218,6 +218,7 @@ export const he: Translation = {
     entity_not_found: 'ישות לא נמצאה: {{entity}}',
     failed_to_load: 'שגיאה בטעינת נתוני הישות',
     service_call_failed: 'שגיאה בשליחת פקודה לשואב',
+    map_transform_unavailable: 'קואורדינטות המפה אינן זמינות. ניקוי האזור לא התחיל.',
     entity_unavailable: 'השואב אינו זמין',
   },
 

@@ -219,6 +219,7 @@ export const it: Translation = {
     entity_not_found: 'Entità non trovata: {{entity}}',
     failed_to_load: 'Impossibile caricare i dati entità',
     service_call_failed: "Impossibile inviare il comando all'aspirapolvere",
+    map_transform_unavailable: 'Coordinate della mappa non disponibili. La pulizia della zona non è stata avviata.',
     entity_unavailable: 'Aspirapolvere non disponibile',
   },
 

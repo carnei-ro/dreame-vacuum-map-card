@@ -9,7 +9,7 @@ import { ShortcutsModal } from '@/components/ShortcutsModal';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { RoomSelectionDisplay } from '@/components/RoomSelectionDisplay';
 import { Toast } from '@/components/common';
-import { useCardUIState, useVacuumServices, useToast, useTranslation, useTheme } from '@/hooks';
+import { useCardUIState, useVacuumServices, useToast, useTranslation, useTheme, useMapGeometry } from '@/hooks';
 import { extractEntityData, getEffectiveCleaningMode, getAttr, getActiveSegments, resolveMapEntityId } from '@/utils';
 import { isRtlLanguage } from '@/i18n';
 import { VacuumCardProvider } from '@/contexts';
@@ -70,6 +70,13 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
 
   // Get map entity ID
   const mapEntityId = resolveMapEntityId(hass, config.entity, config.map_entity);
+  const mapGeometry = useMapGeometry({
+    hass,
+    mapEntityId,
+    imageWidth: imageDimensions?.width ?? 0,
+    imageHeight: imageDimensions?.height ?? 0,
+    roomNames: config.room_names,
+  });
 
   // Check if vacuum is actively cleaning (state === 'cleaning' or started attribute)
   const isCleaning = entity ? entity.state === 'cleaning' || getAttr(entity.attributes.started, false) : false;
@@ -127,6 +134,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     hass,
     entityId: config.entity,
     mapEntityId,
+    mapTransform: mapGeometry.transform,
     onSuccess: showToast,
     onError: showError,
   });
@@ -190,7 +198,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   }
 
   // Extract entity data
-  const entityData = extractEntityData(entity, config);
+  const entityData = extractEntityData(entity, config, hass);
   if (!entityData) {
     return <div className="dreame-vacuum-card__error">{t('errors.failed_to_load')}</div>;
   }
@@ -218,6 +226,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
 
           <VacuumMap
             mapEntityId={finalMapEntityId}
+            geometry={mapGeometry}
             selectedMode={selectedMode}
             selectedRooms={selectedRooms}
             onRoomToggle={handleRoomToggleWithToast}

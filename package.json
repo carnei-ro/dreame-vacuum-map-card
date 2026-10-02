@@ -16,6 +16,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,scss}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,scss}\"",
     "validate:translations": "npx tsx scripts/validate-translations.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
     "preview": "vite preview",
     "prepare": "husky"
   },
@@ -57,6 +59,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
-    "vite": "^7.2.4"
+    "vite": "^7.2.4",
+    "vitest": "^5.0.3"
   }
 }

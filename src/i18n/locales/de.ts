@@ -220,6 +220,7 @@ export const de: Translation = {
     entity_not_found: 'Entität nicht gefunden: {{entity}}',
     failed_to_load: 'Entitätsdaten konnten nicht geladen werden',
     service_call_failed: 'Befehl konnte nicht an den Staubsauger gesendet werden',
+    map_transform_unavailable: 'Kartenkoordinaten sind nicht verfügbar. Die Zonenreinigung wurde nicht gestartet.',
     entity_unavailable: 'Staubsauger nicht verfügbar',
   },
 

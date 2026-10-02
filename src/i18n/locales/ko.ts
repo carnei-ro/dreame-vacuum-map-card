@@ -218,6 +218,7 @@ export const ko: Translation = {
     entity_not_found: '엔티티를 찾을 수 없음: {{entity}}',
     failed_to_load: '엔티티 데이터를 불러오지 못했습니다',
     service_call_failed: '청소기에 명령을 보내지 못했습니다',
+    map_transform_unavailable: '지도 좌표를 사용할 수 없어 구역 청소를 시작하지 않았습니다.',
     entity_unavailable: '청소기를 사용할 수 없습니다',
   },
 

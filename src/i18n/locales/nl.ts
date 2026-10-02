@@ -218,6 +218,7 @@ export const nl: Translation = {
     entity_not_found: 'Entiteit niet gevonden: {{entity}}',
     failed_to_load: 'Kan entiteitsgegevens niet laden',
     service_call_failed: 'Kan opdracht niet naar stofzuiger sturen',
+    map_transform_unavailable: 'Kaartcoördinaten zijn niet beschikbaar. Zonereiniging is niet gestart.',
     entity_unavailable: 'Stofzuiger niet beschikbaar',
   },
 

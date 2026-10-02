@@ -2,17 +2,17 @@ import { useMemo, memo, useRef } from 'react';
 import { useDrag } from '@use-gesture/react';
 import type { Room } from '@/types/homeassistant';
 import { useMachineState } from '@/contexts';
-import { createRoomPath, type MapRotation } from '@/utils/roomParser';
+import { createRoomPath } from '@/utils/roomParser';
+import type { MapTransform } from '@/utils/mapTransform';
 import { logger } from '@/utils/logger';
 
 interface RoomSegmentsProps {
   rooms: Room[];
   selectedRooms: Map<number, string>;
   onRoomToggle: (roomId: number, roomName: string) => void;
-  calibrationPoints: { vacuum: { x: number; y: number }; map: { x: number; y: number } }[];
+  transform: MapTransform;
   imageWidth: number;
   imageHeight: number;
-  rotation?: MapRotation;
 }
 
 interface RoomPathProps {
@@ -63,10 +63,9 @@ function RoomSegmentsInner({
   rooms,
   selectedRooms,
   onRoomToggle,
-  calibrationPoints,
+  transform,
   imageWidth,
   imageHeight,
-  rotation = 0,
 }: RoomSegmentsProps) {
   const { phase } = useMachineState();
   const isBusy = phase !== 'idle';
@@ -82,9 +81,9 @@ function RoomSegmentsInner({
       })
       .map((room) => ({
         room,
-        path: createRoomPath(room, calibrationPoints, imageWidth, imageHeight, rooms, rotation),
+        path: createRoomPath(room, transform),
       }));
-  }, [rooms, calibrationPoints, imageWidth, imageHeight, rotation]);
+  }, [rooms, transform]);
 
   if (!imageWidth || !imageHeight) {
     return null;

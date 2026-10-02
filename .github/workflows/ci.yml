@@ -36,6 +36,9 @@ jobs:
       - name: Validate translations
         run: npm run validate:translations
 
+      - name: Run unit tests
+        run: npm run test:run
+
       - name: TypeScript type check
         run: npx tsc --noEmit
 
