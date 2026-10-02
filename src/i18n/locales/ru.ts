@@ -121,6 +121,15 @@ export const ru: Translation = {
     create_hint: 'Создайте шорткаты в приложении Dreame для быстрого выбора ваших любимых процедур ',
   },
 
+  dock_popup: {
+    information: 'Информация о станции',
+    tasks: 'Задачи станции',
+    clean_water_tank: 'Бак чистой воды',
+    used_water_tank: 'Бак грязной воды',
+    dust_bag: 'Пылесборник',
+    detergent: 'Моющее средство',
+  },
+
   // Custom Mode
   custom_mode: {
     cleaning_mode_title: 'Режим уборки',

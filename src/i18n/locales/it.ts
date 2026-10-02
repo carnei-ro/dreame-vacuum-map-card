@@ -121,6 +121,15 @@ export const it: Translation = {
     create_hint: "Crea scorciatoie nell'app Dreame per avviare rapidamente le tue routine di pulizia preferite",
   },
 
+  dock_popup: {
+    information: 'Informazioni base',
+    tasks: 'Attività base',
+    clean_water_tank: 'Serbatoio acqua pulita',
+    used_water_tank: 'Serbatoio acqua sporca',
+    dust_bag: 'Sacchetto polvere',
+    detergent: 'Detergente',
+  },
+
   // Custom Mode
   custom_mode: {
     cleaning_mode_title: 'Modalità di pulizia',

@@ -32,7 +32,8 @@ export const de: Translation = {
     looking_for: 'Suche nach: {{entity}}',
     room_overlay: 'Klicken Sie auf Raumnummern, um Räume zum Reinigen auszuwählen',
     zone_overlay_create: 'Klicken Sie auf die Karte, um eine Reinigungszone zu platzieren',
-    zone_overlay_resize: 'Kanten ziehen zum Ändern der Größe. Auf die Karte klicken, um eine weitere Zone hinzuzufügen.',
+    zone_overlay_resize:
+      'Kanten ziehen zum Ändern der Größe. Auf die Karte klicken, um eine weitere Zone hinzuzufügen.',
     clear_zone: 'Zone löschen',
     switch_to_list: 'Zur Listenansicht wechseln',
     switch_to_map: 'Zur Kartenansicht wechseln',
@@ -120,6 +121,15 @@ export const de: Translation = {
     no_shortcuts: 'Keine Verknüpfungen verfügbar',
     create_hint:
       'Erstellen Sie Verknüpfungen in der Dreame-App, um Ihre bevorzugten Reinigungsroutinen schnell zu starten',
+  },
+
+  dock_popup: {
+    information: 'Dock-Informationen',
+    tasks: 'Dock-Aufgaben',
+    clean_water_tank: 'Frischwassertank',
+    used_water_tank: 'Schmutzwassertank',
+    dust_bag: 'Staubbeutel',
+    detergent: 'Reinigungsmittel',
   },
 
   // Custom Mode

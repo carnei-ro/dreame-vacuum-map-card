@@ -121,6 +121,15 @@ export const pl: Translation = {
     create_hint: 'Utwórz skróty w aplikacji Dreame, aby szybko uruchamiać ulubione procedury sprzątania',
   },
 
+  dock_popup: {
+    information: 'Informacje o stacji',
+    tasks: 'Zadania stacji',
+    clean_water_tank: 'Zbiornik czystej wody',
+    used_water_tank: 'Zbiornik brudnej wody',
+    dust_bag: 'Worek na kurz',
+    detergent: 'Detergent',
+  },
+
   // Custom Mode
   custom_mode: {
     cleaning_mode_title: 'Tryb sprzątania',

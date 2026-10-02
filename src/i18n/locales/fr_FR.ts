@@ -121,6 +121,15 @@ export const fr_FR: Translation = {
     create_hint: "Créez des raccourcis dans l'application Dreame pour lancer rapidement vos routines préférées",
   },
 
+  dock_popup: {
+    information: 'Informations de la station',
+    tasks: 'Tâches de la station',
+    clean_water_tank: "Réservoir d'eau propre",
+    used_water_tank: "Réservoir d'eau usée",
+    dust_bag: 'Sac à poussière',
+    detergent: 'Détergent',
+  },
+
   // Custom mode
   custom_mode: {
     cleaning_mode_title: 'Mode de nettoyage',

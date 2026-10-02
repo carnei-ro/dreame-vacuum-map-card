@@ -122,6 +122,15 @@ export const es: Translation = {
       'Cree accesos directos en la aplicación Dreame para iniciar rápidamente sus rutinas de limpieza favoritas',
   },
 
+  dock_popup: {
+    information: 'Información de la base',
+    tasks: 'Tareas de la base',
+    clean_water_tank: 'Depósito de agua limpia',
+    used_water_tank: 'Depósito de agua sucia',
+    dust_bag: 'Bolsa de polvo',
+    detergent: 'Detergente',
+  },
+
   // Custom Mode
   custom_mode: {
     cleaning_mode_title: 'Modo de limpieza',

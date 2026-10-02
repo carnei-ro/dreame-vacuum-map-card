@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import type { CleaningSelectionMode, StopAction } from '@/types/homeassistant';
 import { useTranslation, useButtonConfig } from '@/hooks';
 import { useMachineState } from '@/contexts';
+import { DockPopup } from '@/components/DockPopup';
+import { shouldOpenDockPopup } from '@/utils/dockPopup';
 import { CleanButton, PauseButton, ResumeButton, StopButton, DockButton } from './components';
 import './ActionButtons.scss';
 
@@ -26,8 +29,10 @@ export function ActionButtons({
   const { t, getRoomCountTranslation } = useTranslation();
   const { getStopAction } = useButtonConfig();
   const { phase, controls } = useMachineState();
+  const [dockPopupOpened, setDockPopupOpened] = useState(false);
 
   const stopAction = getStopAction();
+  const opensDockPopup = shouldOpenDockPopup(phase);
 
   const getCleanButtonText = (): string => {
     switch (selectedMode) {
@@ -43,6 +48,13 @@ export function ActionButtons({
   };
 
   const handleStop = () => onStop(stopAction);
+  const handleDockClick = (): void => {
+    if (opensDockPopup) {
+      setDockPopupOpened(true);
+      return;
+    }
+    onDock();
+  };
 
   if (phase === 'cleaning') {
     return (
@@ -63,9 +75,12 @@ export function ActionButtons({
   }
 
   return (
-    <div className="action-buttons">
-      <CleanButton onClick={onClean} text={getCleanButtonText()} disabled={!controls.canStartCleaning} />
-      <DockButton onClick={onDock} disabled={!controls.canDock} />
-    </div>
+    <>
+      <div className="action-buttons">
+        <CleanButton onClick={onClean} text={getCleanButtonText()} disabled={!controls.canStartCleaning} />
+        <DockButton onClick={handleDockClick} disabled={!controls.canDock && !opensDockPopup} />
+      </div>
+      <DockPopup opened={dockPopupOpened} onClose={() => setDockPopupOpened(false)} />
+    </>
   );
 }

@@ -121,6 +121,15 @@ export const he: Translation = {
     create_hint: 'צור קיצורי דרך באפליקציית Dreame כדי להפעיל במהירות את תוכניות הניקוי המועדפות עליך',
   },
 
+  dock_popup: {
+    information: 'מידע על התחנה',
+    tasks: 'משימות התחנה',
+    clean_water_tank: 'מיכל מים נקיים',
+    used_water_tank: 'מיכל מים מלוכלכים',
+    dust_bag: 'שקית אבק',
+    detergent: 'חומר ניקוי',
+  },
+
   // מצב מותאם אישית
   custom_mode: {
     cleaning_mode_title: 'מצב ניקוי',

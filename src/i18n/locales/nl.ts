@@ -121,6 +121,15 @@ export const nl: Translation = {
     create_hint: 'Maak snelkoppelingen aan in de Dreame app om snel je favoriete routines te starten',
   },
 
+  dock_popup: {
+    information: 'Dockinformatie',
+    tasks: 'Docktaken',
+    clean_water_tank: 'Schoonwatertank',
+    used_water_tank: 'Vuilwatertank',
+    dust_bag: 'Stofzak',
+    detergent: 'Reinigingsmiddel',
+  },
+
   // Aangepaste Modus
   custom_mode: {
     cleaning_mode_title: 'Schoonmaakmodus',

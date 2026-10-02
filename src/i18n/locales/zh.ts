@@ -121,6 +121,15 @@ export const zh: Translation = {
     create_hint: '请在 Dreame (追觅) App 中创建快捷指令，以便快速启动您常用的清洁任务',
   },
 
+  dock_popup: {
+    information: '基站信息',
+    tasks: '基站任务',
+    clean_water_tank: '清水箱',
+    used_water_tank: '污水箱',
+    dust_bag: '集尘袋',
+    detergent: '清洁剂',
+  },
+
   // Custom Mode (自定义模式)
   custom_mode: {
     cleaning_mode_title: '清洁模式',

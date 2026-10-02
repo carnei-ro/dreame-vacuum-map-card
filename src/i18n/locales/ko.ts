@@ -121,6 +121,15 @@ export const ko: Translation = {
     create_hint: 'Dreame 앱에서 단축키를 만들어 자주 사용하는 청소 루틴을 빠르게 시작하세요',
   },
 
+  dock_popup: {
+    information: '도크 정보',
+    tasks: '도크 작업',
+    clean_water_tank: '깨끗한 물통',
+    used_water_tank: '오수통',
+    dust_bag: '먼지 봉투',
+    detergent: '세제',
+  },
+
   // Custom Mode
   custom_mode: {
     cleaning_mode_title: '청소 모드',

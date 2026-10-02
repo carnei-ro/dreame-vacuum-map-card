@@ -119,6 +119,15 @@ export const en = {
     create_hint: 'Create shortcuts in the Dreame app to quickly start your favorite cleaning routines',
   },
 
+  dock_popup: {
+    information: 'Dock Information',
+    tasks: 'Dock Tasks',
+    clean_water_tank: 'Clean Water Tank',
+    used_water_tank: 'Used Water Tank',
+    dust_bag: 'Dust Bag',
+    detergent: 'Detergent',
+  },
+
   // Custom Mode
   custom_mode: {
     cleaning_mode_title: 'Cleaning Mode',
