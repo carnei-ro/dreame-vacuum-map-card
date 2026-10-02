@@ -89,22 +89,24 @@ const customThemeSchema = z
 /**
  * Zod schema for card configuration validation.
  */
-export const configSchema = z.object({
-  type: z.string(),
-  entity: vacuumEntitySchema,
-  map_entity: cameraEntitySchema.optional(),
-  title: z.string().optional(),
-  theme: z.enum(['light', 'dark', 'custom']).optional(),
-  custom_theme: customThemeSchema,
-  language: z.enum(['en', 'de', 'ru', 'pl', 'it', 'nl', 'es', 'zh', 'he', 'fr_FR', 'ko']).optional(),
-  default_mode: z.enum(['room', 'all', 'zone']).optional(),
-  default_room_view: z.enum(['map', 'list']).optional(),
-  buttons: z.array(buttonConfigSchema).optional(),
-  map_overlays: z.array(z.enum(['vacuum', 'charger', 'room_labels'])).optional(),
-  room_names: z.record(z.string(), z.string()).optional(),
-  room_label_scale: z.number().positive().optional(),
-  map_height: z.string().optional(),
-});
+export const configSchema = z
+  .object({
+    type: z.string(),
+    entity: vacuumEntitySchema,
+    map_entity: cameraEntitySchema.optional(),
+    title: z.string().optional(),
+    theme: z.enum(['light', 'dark', 'custom']).optional(),
+    custom_theme: customThemeSchema,
+    language: z.string().optional(),
+    default_mode: z.enum(['room', 'all', 'zone']).optional(),
+    default_room_view: z.enum(['map', 'list']).optional(),
+    buttons: z.array(buttonConfigSchema).optional(),
+    map_overlays: z.array(z.enum(['vacuum', 'charger', 'room_labels'])).optional(),
+    room_names: z.record(z.string(), z.string()).optional(),
+    room_label_scale: z.number().positive().optional(),
+    map_height: z.string().optional(),
+  })
+  .passthrough();
 
 export type ValidatedConfig = z.infer<typeof configSchema>;
 

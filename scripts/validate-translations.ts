@@ -6,6 +6,7 @@
  */
 
 import { locales, type SupportedLanguage } from '../src/i18n/locales';
+import { entityLabelKeys } from '../src/config/entity-ui-mapping';
 
 type NestedObject = { [key: string]: string | NestedObject };
 
@@ -50,6 +51,8 @@ function validateTranslations(): boolean {
   const referenceLocale = 'en' as SupportedLanguage;
   const referenceTranslation = locales[referenceLocale];
   const referenceKeys = extractKeys(referenceTranslation as unknown as NestedObject);
+  const optionalLabelKeys = entityLabelKeys();
+  const requiredKeys = referenceKeys.filter((key) => !optionalLabelKeys.has(key));
 
   console.log(`\n📋 Reference locale: ${referenceLocale} (${referenceKeys.length} keys)\n`);
 
@@ -62,16 +65,17 @@ function validateTranslations(): boolean {
     const translation = locales[localeName];
     const translationKeys = extractKeys(translation as unknown as NestedObject);
     const { missing, extra } = compareKeys(referenceKeys, translationKeys);
+    const requiredMissing = missing.filter((key) => requiredKeys.includes(key));
 
-    if (missing.length === 0 && extra.length === 0) {
+    if (requiredMissing.length === 0 && extra.length === 0) {
       console.log(`✅ ${localeName}: All ${translationKeys.length} keys present`);
     } else {
       hasErrors = true;
       console.log(`\n❌ ${localeName}: Found issues`);
 
-      if (missing.length > 0) {
-        console.log(`   Missing keys (${missing.length}):`);
-        for (const key of missing) {
+      if (requiredMissing.length > 0) {
+        console.log(`   Missing keys (${requiredMissing.length}):`);
+        for (const key of requiredMissing) {
           console.log(`     - ${key}`);
         }
       }

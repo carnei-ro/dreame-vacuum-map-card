@@ -1,5 +1,6 @@
 import { SegmentedControl } from '@/components/common';
 import { useTranslation, getEntityState } from '@/hooks';
+import { useEntityLabel } from '@/hooks/useEntityLabel';
 import { useDeviceEntities, useHass } from '@/contexts';
 import type { EntityDefinition } from '@/config/entity-ui-mapping';
 import './EntityRenderers.scss';
@@ -19,6 +20,7 @@ function formatOptionLabel(option: string): string {
 
 export function EntitySelect({ definition, isChild = false, label }: EntitySelectProps) {
   const { t } = useTranslation();
+  const entityLabel = useEntityLabel(definition, label);
   const hass = useHass();
   const { get } = useDeviceEntities();
   const entityId = get(definition.platform, definition.key);
@@ -46,7 +48,7 @@ export function EntitySelect({ definition, isChild = false, label }: EntitySelec
     return (
       <div className={`entity-item entity-item--segmented ${isChild ? 'entity-item--child' : ''}`}>
         <div className="entity-item__info">
-          <span className="entity-item__label">{label ?? t(definition.labelKey)}</span>
+          <span className="entity-item__label">{entityLabel}</span>
           {definition.descriptionKey && (
             <span className="entity-item__description">{t(definition.descriptionKey)}</span>
           )}
@@ -64,7 +66,7 @@ export function EntitySelect({ definition, isChild = false, label }: EntitySelec
   return (
     <div className={`entity-item entity-item--select ${isChild ? 'entity-item--child' : ''}`}>
       <div className="entity-item__info">
-        <span className="entity-item__label">{label ?? t(definition.labelKey)}</span>
+        <span className="entity-item__label">{entityLabel}</span>
         {definition.descriptionKey && <span className="entity-item__description">{t(definition.descriptionKey)}</span>}
       </div>
       <select

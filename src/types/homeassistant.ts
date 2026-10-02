@@ -60,7 +60,7 @@ export interface HassConfig {
   type: string;
   theme?: 'light' | 'dark' | 'custom';
   custom_theme?: CustomThemeConfig;
-  language?: 'en' | 'de' | 'ru' | 'pl' | 'it' | 'nl' | 'es' | 'zh' | 'he' | 'fr_FR' | 'ko';
+  language?: string;
   default_mode?: CleaningSelectionMode;
   default_room_view?: RoomViewMode;
   buttons?: ButtonConfig[];
@@ -90,6 +90,7 @@ export interface HassConnection {
 
 export interface Hass {
   states: Record<string, HassEntity>;
+  language?: string;
   callService: (domain: string, service: string, data?: Record<string, unknown>) => Promise<void>;
   callWS: <T>(message: Record<string, unknown>) => Promise<T>;
   connection?: HassConnection;

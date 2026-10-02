@@ -515,6 +515,16 @@ export const ALL_SECTIONS: SectionDefinition[] = [
   MAP_SETTINGS_SECTION,
 ].sort((a, b) => a.order - b.order);
 
+export function entityLabelKeys(): ReadonlySet<string> {
+  const keys = new Set<string>();
+  for (const section of ALL_SECTIONS) {
+    for (const entity of section.entities) {
+      keys.add(entity.labelKey);
+    }
+  }
+  return keys;
+}
+
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================

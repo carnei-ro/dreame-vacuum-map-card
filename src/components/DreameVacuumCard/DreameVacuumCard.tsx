@@ -27,11 +27,10 @@ import {
   readLiveMapFloor,
   resolveCleaningSelection,
 } from '@/utils';
-import { isRtlLanguage } from '@/i18n';
+import { isRtlLanguage, resolveChromeLanguage } from '@/i18n';
 import { VacuumCardProvider } from '@/contexts';
 import { CAPABILITY } from '@/constants';
 import type { Hass, HassConfig } from '@/types/homeassistant';
-import type { SupportedLanguage } from '@/i18n/locales';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import type { CSSProperties } from 'react';
 import { logger } from '@/utils/logger';
@@ -47,8 +46,8 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   const deviceEntities = useLoadDeviceEntities(hass, config.entity);
   logger.debug('DreameVacuumCard', 'Loaded entity', entity);
   const themeType = config.theme || 'light';
-  const language = config.language || 'en';
-  const isRtl = isRtlLanguage(language as SupportedLanguage);
+  const language = resolveChromeLanguage(config.language, hass.language);
+  const isRtl = isRtlLanguage(language);
   const { t } = useTranslation(language);
 
   // Container ref for applying theme
@@ -246,7 +245,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
       hass={hass}
       entity={entity}
       config={config}
-      language={language as SupportedLanguage}
+      language={language}
       deviceEntities={deviceEntities}
     >
       <div
