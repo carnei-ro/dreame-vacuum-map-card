@@ -177,7 +177,6 @@ export function VacuumMap({
           panning={{
             disabled: !isPanningEnabled,
             velocityDisabled: true,
-            excluded: ['vacuum-map__room-segment'],
           }}
           doubleClick={{ disabled: true }}
         >

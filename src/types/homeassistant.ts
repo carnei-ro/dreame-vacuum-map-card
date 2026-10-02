@@ -30,6 +30,7 @@ export interface Room {
   name: string;
   icon?: string;
   visibility?: string;
+  rings?: Array<Array<{ x: number; y: number }>>;
   x0?: number;
   y0?: number;
   x1?: number;

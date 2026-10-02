@@ -1,5 +1,4 @@
 import { useMemo, memo, useRef } from 'react';
-import { useDrag } from '@use-gesture/react';
 import type { Room } from '@/types/homeassistant';
 import { useMachineState } from '@/contexts';
 import { createRoomPath } from '@/utils/roomParser';
@@ -26,33 +25,66 @@ interface RoomPathProps {
 const DRAG_THRESHOLD = 10;
 
 function RoomPath({ room, path, isSelected, isBusy, onRoomToggle }: RoomPathProps) {
-  const pathRef = useRef<SVGPathElement>(null);
+  const pointerStartRef = useRef<{ id: number; x: number; y: number } | null>(null);
 
-  useDrag(
-    (state) => {
-      if (state.tap) {
-        logger.debug('RoomSegments', 'Tap on room:', room.id, room.name);
-        onRoomToggle(room.id, room.name);
-      }
-    },
-    {
-      target: pathRef,
-      filterTaps: true,
-      tapsThreshold: DRAG_THRESHOLD,
+  const clearPointer = (element: SVGPathElement, pointerId: number) => {
+    pointerStartRef.current = null;
+    if (element.hasPointerCapture(pointerId)) {
+      element.releasePointerCapture(pointerId);
     }
-  );
+  };
+
+  const handlePointerDown = (event: React.PointerEvent<SVGPathElement>) => {
+    if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) {
+      return;
+    }
+
+    pointerStartRef.current = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePointerUp = (event: React.PointerEvent<SVGPathElement>) => {
+    const start = pointerStartRef.current;
+    if (!start || start.id !== event.pointerId) {
+      return;
+    }
+
+    const isTap = Math.hypot(event.clientX - start.x, event.clientY - start.y) < DRAG_THRESHOLD;
+    clearPointer(event.currentTarget, event.pointerId);
+    if (isTap) {
+      logger.debug('RoomSegments', 'Tap on room:', room.id, room.name);
+      onRoomToggle(room.id, room.name);
+    }
+  };
+
+  const handlePointerCancel = (event: React.PointerEvent<SVGPathElement>) => {
+    if (pointerStartRef.current?.id === event.pointerId) {
+      clearPointer(event.currentTarget, event.pointerId);
+    }
+  };
+
+  const handleLostPointerCapture = (event: React.PointerEvent<SVGPathElement>) => {
+    if (pointerStartRef.current?.id === event.pointerId) {
+      pointerStartRef.current = null;
+    }
+  };
 
   return (
     <path
-      ref={pathRef}
       d={path}
       className={`vacuum-map__room-segment ${isSelected ? 'vacuum-map__room-segment--selected' : ''}`}
       fill={isSelected ? 'var(--accent-bg, rgba(212, 175, 55, 0.3))' : 'transparent'}
+      fillRule="evenodd"
+      clipRule="evenodd"
       stroke={!isBusy && isSelected ? 'var(--accent-color, #D4AF37)' : 'rgba(255, 255, 255, 0.2)'}
       strokeWidth="2"
-      style={{ cursor: 'pointer', transition: 'all 0.2s ease', touchAction: 'none' }}
+      style={{ cursor: 'pointer', transition: 'all 0.2s ease' }}
       data-room-id={room.id}
       data-room-name={room.name}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onLostPointerCapture={handleLostPointerCapture}
     >
       <title>{room.name}</title>
     </path>
