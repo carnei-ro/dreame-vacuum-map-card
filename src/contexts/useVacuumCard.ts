@@ -2,7 +2,8 @@ import { useContext } from 'react';
 import { VacuumCardContext, type VacuumCardContextValue } from './VacuumCardContext';
 import type { Hass, HassEntity, HassConfig } from '@/types/homeassistant';
 import type { SupportedLanguage } from '@/i18n/locales';
-import type { VacuumMachineState } from '@/hooks';
+import type { DeviceEntities } from '@/hooks/useLoadDeviceEntities';
+import type { VacuumMachineState } from '@/hooks/useVacuumMachineState';
 
 function useVacuumCardContext(): VacuumCardContextValue {
   const context = useContext(VacuumCardContext);
@@ -39,4 +40,8 @@ export function useIsRtl(): boolean {
 
 export function useMachineState(): VacuumMachineState {
   return useVacuumCardContext().machineState;
+}
+
+export function useDeviceEntities(): DeviceEntities {
+  return useVacuumCardContext().deviceEntities;
 }

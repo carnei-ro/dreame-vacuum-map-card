@@ -84,9 +84,15 @@ export interface HassUnitSystem {
   accumulated_precipitation?: string;
 }
 
+export interface HassConnection {
+  subscribeEvents: (callback: () => void, eventType: string) => Promise<() => void>;
+}
+
 export interface Hass {
   states: Record<string, HassEntity>;
   callService: (domain: string, service: string, data?: Record<string, unknown>) => Promise<void>;
+  callWS: <T>(message: Record<string, unknown>) => Promise<T>;
+  connection?: HassConnection;
   hassUrl: (path: string) => string;
   config?: {
     unit_system?: HassUnitSystem;

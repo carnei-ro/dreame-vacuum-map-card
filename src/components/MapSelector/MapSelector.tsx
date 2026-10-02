@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { ChevronDown, Check, Map } from 'lucide-react';
-import { useTranslation, getSelectState } from '@/hooks';
-import { useEntity, useHass, useConfig } from '@/contexts';
-import { buildEntityId, DREAME_SELECTS } from '@/constants';
+import { useTranslation, getEntityState } from '@/hooks';
+import { useEntity, useHass, useDeviceEntities } from '@/contexts';
+import { CARD_COMPANION_ENTITIES } from '@/constants';
 import './MapSelector.scss';
 
 interface MapInfo {
@@ -15,22 +15,16 @@ export function MapSelector() {
   const { t } = useTranslation();
   const entity = useEntity();
   const hass = useHass();
-  const config = useConfig();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  const { get } = useDeviceEntities();
   const attributes = entity.attributes;
 
-  // Get available maps from entity attributes
   const maps = useMemo(() => (attributes.maps as MapInfo[] | undefined) ?? [], [attributes.maps]);
   const selectedMapId = attributes.selected_map_id ?? attributes.selected_map;
-
-  // Derive the select entity ID for map selection
-  const entityName = config.entity?.split('.')[1] ?? '';
-  const selectEntityId = buildEntityId('select', entityName, DREAME_SELECTS.SELECTED_MAP.key);
-
-  // Check select entity availability
-  const selectState = getSelectState(hass, entityName, 'selected_map');
+  const selectEntityId = get(CARD_COMPANION_ENTITIES.selectedMap.platform, CARD_COMPANION_ENTITIES.selectedMap.key);
+  const selectState = getEntityState(hass, selectEntityId);
 
   // Only disable if entity exists but is unavailable, not if it doesn't exist
   const isDisabled = selectState.unavailable;
@@ -42,6 +36,7 @@ export function MapSelector() {
   // Handle map selection
   const handleMapSelect = useCallback(
     (map: MapInfo) => {
+      if (!selectEntityId) return;
       hass.callService('select', 'select_option', {
         entity_id: selectEntityId,
         option: map.name,

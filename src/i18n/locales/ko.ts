@@ -247,6 +247,9 @@ export const ko: Translation = {
       remaining: '남음',
       reset: '초기화',
     },
+    more: {
+      title: '추가',
+    },
     device_info: {
       title: '기기 정보',
       firmware: '펌웨어',

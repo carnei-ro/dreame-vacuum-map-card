@@ -12,12 +12,10 @@ export * from '../config/entity-ui-mapping';
 // Re-export icon SVG constants
 export * from './icons';
 
-// Capability alias - DREAME_CAPABILITIES is the source of truth
-import { DREAME_CAPABILITIES } from '../generated/dreame-entities';
-
-export const CAPABILITY = DREAME_CAPABILITIES;
-
-export type CapabilityString = (typeof CAPABILITY)[keyof typeof CAPABILITY];
+/** Features with no companion entity. Entity-backed features follow the registry. */
+export const CAPABILITY = {
+  SHORTCUTS: 'shortcuts',
+} as const;
 
 // Re-export vacuum state machine constants
 export * from './vacuumStates';

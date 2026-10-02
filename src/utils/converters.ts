@@ -58,7 +58,3 @@ export function convertSelfCleanFrequencyToService(frequency: SelfCleanFrequency
 export function convertToLowerCase(value: string): string {
   return value.toLowerCase();
 }
-
-export function extractBaseEntityId(entityId: string): string {
-  return entityId.replace('vacuum.', '');
-}

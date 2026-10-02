@@ -247,6 +247,9 @@ export const he: Translation = {
       remaining: 'נותרו',
       reset: 'איפוס',
     },
+    more: {
+      title: 'עוד',
+    },
     device_info: {
       title: 'מידע על המכשיר',
       firmware: 'גרסת קושחה',

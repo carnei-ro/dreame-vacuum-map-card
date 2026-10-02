@@ -16,20 +16,14 @@ interface CleanGeniusModeProps {
   cleangeniusMode: string;
   cleangeniusModeList: string[];
   cleangenius: string;
-  baseEntityId: string;
 }
 
-export function CleanGeniusMode({
-  cleangeniusMode,
-  cleangeniusModeList,
-  cleangenius,
-  baseEntityId,
-}: CleanGeniusModeProps) {
+export function CleanGeniusMode({ cleangeniusMode, cleangeniusModeList, cleangenius }: CleanGeniusModeProps) {
   const hass = useHass();
   const { phase } = useMachineState();
   const { setSelectOption } = useHomeAssistantServices(hass);
   const { t } = useTranslation();
-  const entityIds = useVacuumEntityIds(baseEntityId);
+  const entityIds = useVacuumEntityIds();
 
   const isInCleaningSession = phase === 'cleaning' || phase === 'paused';
 
@@ -44,9 +38,11 @@ export function CleanGeniusMode({
     const state = enabled ? CLEANGENIUS_STATE.DEEP_CLEANING : CLEANGENIUS_STATE.ROUTINE_CLEANING;
     const route = enabled ? CLEANING_ROUTE.DEEP : CLEANING_ROUTE.STANDARD;
 
-    setSelectOption(entityIds.cleangenius, convertCleanGeniusStateToService(state as CleanGeniusState));
+    if (entityIds.cleangenius) {
+      setSelectOption(entityIds.cleangenius, convertCleanGeniusStateToService(state as CleanGeniusState));
+    }
 
-    if (cleaningRouteState.available) {
+    if (entityIds.cleaningRoute && cleaningRouteState.available) {
       setSelectOption(entityIds.cleaningRoute, convertToLowerCase(route));
     }
   };
@@ -69,6 +65,7 @@ export function CleanGeniusMode({
                 } ${isModeDisabled ? 'cleaning-mode-modal__mode-card--disabled' : ''}`}
                 onClick={() =>
                   !isModeDisabled &&
+                  entityIds.cleangeniusMode &&
                   setSelectOption(entityIds.cleangeniusMode, convertCleanGeniusModeToService(typedMode))
                 }
                 style={{ cursor: isModeDisabled ? 'not-allowed' : 'pointer' }}

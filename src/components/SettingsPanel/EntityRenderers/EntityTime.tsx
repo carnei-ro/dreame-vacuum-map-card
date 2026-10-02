@@ -1,44 +1,46 @@
 import { useCallback } from 'react';
-import { useTranslation, getTimeState } from '@/hooks';
-import { useEntity, useHass } from '@/contexts';
+import { useTranslation, getEntityState } from '@/hooks';
+import { useDeviceEntities, useHass } from '@/contexts';
 import type { EntityDefinition } from '@/config/entity-ui-mapping';
 import './EntityRenderers.scss';
 
 interface EntityTimeProps {
   definition: EntityDefinition;
   isChild?: boolean;
+  label?: string;
 }
 
-export function EntityTime({ definition, isChild = false }: EntityTimeProps) {
+export function EntityTime({ definition, isChild = false, label }: EntityTimeProps) {
   const { t } = useTranslation();
-  const entity = useEntity();
   const hass = useHass();
-  const entityName = entity.entity_id.split('.')[1] ?? '';
-
-  const timeState = getTimeState(hass, entityName, definition.key);
+  const { get } = useDeviceEntities();
+  const entityId = get(definition.platform, definition.key);
+  const timeState = getEntityState(hass, entityId);
+  const timeValue = timeState.state ? timeState.state.substring(0, 5) : '00:00';
 
   const handleChange = useCallback(
     (value: string) => {
+      if (!entityId) return;
       hass.callService('time', 'set_value', {
-        entity_id: timeState.entityId,
+        entity_id: entityId,
         time: value,
       });
     },
-    [hass, timeState.entityId]
+    [entityId, hass]
   );
 
-  if (timeState.disabled) return null;
+  if (!entityId || timeState.disabled) return null;
 
   return (
     <div className={`entity-item entity-item--time ${isChild ? 'entity-item--child' : ''}`}>
       <div className="entity-item__info">
-        <span className="entity-item__label">{t(definition.labelKey)}</span>
+        <span className="entity-item__label">{label ?? t(definition.labelKey)}</span>
         {definition.descriptionKey && <span className="entity-item__description">{t(definition.descriptionKey)}</span>}
       </div>
       <input
         type="time"
         className="entity-item__time-input"
-        value={timeState.timeValue}
+        value={timeValue}
         disabled={timeState.unavailable}
         onChange={(e) => handleChange(e.target.value)}
       />

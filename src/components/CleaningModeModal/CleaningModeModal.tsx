@@ -3,19 +3,11 @@ import { CleanGeniusMode } from './CleanGeniusMode';
 import { CustomMode } from './CustomMode';
 import { CustomizeMode } from './CustomizeMode';
 import type { CleanGeniusState } from '@/types/vacuum';
-import { useHomeAssistantServices, useVacuumEntityIds, getEntityState, useVacuumCapabilities } from '@/hooks';
+import { useHomeAssistantServices, useVacuumEntityIds, getEntityState } from '@/hooks';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useEntity, useHass, useMachineState } from '@/contexts';
-import { convertCleanGeniusStateToService, extractBaseEntityId, getAttr } from '@/utils';
-import {
-  CLEANGENIUS_STATE,
-  UI_MODE_TYPE,
-  DEFAULTS,
-  CLEANING_MODE,
-  CAPABILITY,
-  buildEntityId,
-  DREAME_SWITCHES,
-} from '@/constants';
+import { convertCleanGeniusStateToService, getAttr } from '@/utils';
+import { CLEANGENIUS_STATE, UI_MODE_TYPE, DEFAULTS, CLEANING_MODE } from '@/constants';
 import { logger } from '@/utils/logger';
 import './CleaningModeModal.scss';
 
@@ -29,15 +21,11 @@ export function CleaningModeModal({ opened, onClose }: CleaningModeModalProps) {
   const entity = useEntity();
   const hass = useHass();
   const { phase, isCustomizedCleaning } = useMachineState();
-  const baseEntityId = extractBaseEntityId(entity.entity_id);
   const { setSelectOption } = useHomeAssistantServices(hass);
-  const entityIds = useVacuumEntityIds(baseEntityId);
-  const capabilities = useVacuumCapabilities();
-
-  const hasCleanGenius = capabilities.has(CAPABILITY.CLEANGENIUS);
+  const entityIds = useVacuumEntityIds();
+  const hasCleanGenius = Boolean(entityIds.cleangenius);
   const isInCleaningSession = phase === 'cleaning' || phase === 'paused';
-
-  const customizedCleaningSwitch = buildEntityId('switch', baseEntityId, DREAME_SWITCHES.CUSTOMIZED_CLEANING.key);
+  const customizedCleaningSwitch = entityIds.customizedCleaning;
   const cleangeniusState = getEntityState(hass, entityIds.cleangenius);
 
   const getStringArrayAttr = (key: string, defaultValue: string[]): string[] => {
@@ -112,22 +100,24 @@ export function CleaningModeModal({ opened, onClose }: CleaningModeModalProps) {
   const handleModeSwitch = (value: string) => {
     const isCleanGeniusMode = value === UI_MODE_TYPE.CLEANGENIUS;
 
-    if (isCleanGeniusMode && isCustomizedCleaning) {
+    if (isCleanGeniusMode && isCustomizedCleaning && customizedCleaningSwitch) {
       hass.callService('switch', 'turn_off', { entity_id: customizedCleaningSwitch });
     }
 
+    if (!entityIds.cleangenius) return;
     const state = isCleanGeniusMode ? CLEANGENIUS_STATE.ROUTINE_CLEANING : CLEANGENIUS_STATE.OFF;
     setSelectOption(entityIds.cleangenius, convertCleanGeniusStateToService(state as CleanGeniusState));
   };
 
   const handleCleaningModeSelect = (entityId: string, value: string) => {
     if (value === CLEANING_MODE.CUSTOMIZE) {
+      if (!customizedCleaningSwitch) return;
       logger.debug('CleaningModeModal', 'Enabling customized cleaning');
       hass.callService('switch', 'turn_on', { entity_id: customizedCleaningSwitch });
       return;
     }
 
-    if (isCustomizedCleaning) {
+    if (isCustomizedCleaning && customizedCleaningSwitch) {
       logger.debug('CleaningModeModal', 'Disabling customized cleaning');
       hass.callService('switch', 'turn_off', { entity_id: customizedCleaningSwitch });
       setTimeout(() => setSelectOption(entityId, value), 300);
@@ -158,7 +148,6 @@ export function CleaningModeModal({ opened, onClose }: CleaningModeModalProps) {
               cleangeniusMode={cleangeniusMode}
               cleangeniusModeList={cleangeniusModeList}
               cleangenius={cleangenius}
-              baseEntityId={baseEntityId}
             />
           ) : (
             <>
@@ -183,12 +172,11 @@ export function CleaningModeModal({ opened, onClose }: CleaningModeModalProps) {
                 selfCleanTime={selfCleanTime}
                 selfCleanTimeMin={selfCleanTimeMin}
                 selfCleanTimeMax={selfCleanTimeMax}
-                baseEntityId={baseEntityId}
                 onCleaningModeSelect={handleCleaningModeSelect}
                 showOnlyCleaningModeSelector={showCustomizeMode}
               />
 
-              {showCustomizeMode && <CustomizeMode baseEntityId={baseEntityId} />}
+              {showCustomizeMode && <CustomizeMode />}
             </>
           )}
         </div>

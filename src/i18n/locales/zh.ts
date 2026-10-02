@@ -247,6 +247,9 @@ export const zh: Translation = {
       remaining: '剩余',
       reset: '复位',
     },
+    more: {
+      title: '更多',
+    },
     device_info: {
       title: '设备信息',
       firmware: '固件版本',

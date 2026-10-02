@@ -248,6 +248,9 @@ export const ru: Translation = {
       remaining: 'осталось',
       reset: 'Сбросить',
     },
+    more: {
+      title: 'Ещё',
+    },
     device_info: {
       title: 'Информация об устройстве',
       firmware: 'Прошивка',

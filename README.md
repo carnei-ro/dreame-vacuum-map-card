@@ -312,11 +312,11 @@ The built file will be in `dist/dreame-vacuum-map-card.js`
 - Home Assistant with the [Dreame Vacuum](https://github.com/Tasshack/dreame-vacuum) integration installed
 - A supported Dreame robot vacuum
 
-## Dynamic Capability Support
+## Dynamic entity support
 
-The card automatically detects your robot's capabilities and shows only the features it supports. Different Dreame models have different features (CleanGenius, hot washing, mop pad swing, etc.) - the card reads these from the `capabilities` attribute and hides unsupported options.
+The card shows the controls Home Assistant registered for this vacuum. The Dreame integration already creates an entity only when that model supports it, so a missing feature does not leave an empty row. Config entities the card does not lay out itself appear under **More**.
 
-For details on how this works and how to add support for missing capabilities, see [docs/CAPABILITIES.md](docs/CAPABILITIES.md).
+Shortcuts are the exception: they have no companion entity, so the card reads the `shortcuts` capability from the vacuum. See [docs/CAPABILITIES.md](docs/CAPABILITIES.md).
 
 ## Credits
 

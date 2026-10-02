@@ -12,3 +12,4 @@ export * from './roomParser';
 export * from './mapTransform';
 export * from './typeGuards';
 export * from './logger';
+export * from './deviceEntities';

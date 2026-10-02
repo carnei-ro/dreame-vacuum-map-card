@@ -245,6 +245,9 @@ export const en = {
       remaining: 'remaining',
       reset: 'Reset',
     },
+    more: {
+      title: 'More',
+    },
     device_info: {
       title: 'Device Info',
       firmware: 'Firmware',

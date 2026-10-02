@@ -1,27 +1,18 @@
 import { useState, useEffect } from 'react';
 import { CircularButton, Accordion } from '@/components/common';
 import { useTranslation, useRoomSettings, getEntityState } from '@/hooks';
-import { useHass, useIsRtl, useConfig } from '@/contexts';
-import { parseRoomsFromCamera } from '@/utils/roomParser';
+import { useHass, useIsRtl, useConfig, useDeviceEntities } from '@/contexts';
+import { parseRoomsFromCamera, resolveMapEntityId } from '@/utils';
 import {
   SUCTION_QUIET_ICON_SVG,
   SUCTION_STANDARD_ICON_SVG,
   SUCTION_STRONG_ICON_SVG,
   SUCTION_TURBO_ICON_SVG,
-  buildEntityId,
-  buildSegmentEntityId,
-  DREAME_CAMERAS,
-  DREAME_SEGMENT_SELECTS,
-  DREAME_SEGMENT_NUMBERS,
 } from '@/constants';
 import { Gauge, Thermometer } from 'lucide-react';
 import type { ReactNode } from 'react';
 import type { RoomSetting } from '@/hooks';
 import './CustomizeMode.scss';
-
-interface CustomizeModeProps {
-  baseEntityId: string;
-}
 
 // Map suction level names to icons (lowercase to match HA entity options)
 const SUCTION_ICONS: Record<string, ReactNode> = {
@@ -61,7 +52,7 @@ function getSuctionShort(level: string | null): string {
 }
 
 function getWetnessShort(level: number | null, min: number, max: number): string {
-  if (level === null) return '-';
+  if (level === null || !Number.isFinite(level)) return '-';
   const third = (max - min) / 3;
   if (level <= min + third) return 'D';
   if (level <= min + third * 2) return 'M';
@@ -216,7 +207,7 @@ function RoomSettingsContent({
       )}
 
       {/* Wetness Slider */}
-      {setting.wetnessLevel !== null && (
+      {setting.wetnessLevel !== null && Number.isFinite(setting.wetnessLevel) && (
         <div className="customize-mode__setting-group">
           <span className="customize-mode__setting-label">{t('custom_mode.wetness_title')}</span>
           <RoomWetnessSlider
@@ -306,20 +297,18 @@ function RoomSettingsContent({
  * CustomizeMode panel shown when "Customize" cleaning mode is selected.
  * Shows accordion-based per-room cleaning settings that read/write to HA entities.
  */
-export function CustomizeMode({ baseEntityId }: CustomizeModeProps) {
+export function CustomizeMode() {
   const { t } = useTranslation();
   const hass = useHass();
   const config = useConfig();
+  const { get } = useDeviceEntities();
 
-  // Get map entity ID and parse rooms
-  const mapEntityId = buildEntityId('camera', baseEntityId, DREAME_CAMERAS.MAP.key);
-  const rooms = parseRoomsFromCamera(hass, mapEntityId, config.room_names);
+  const mapEntityId = resolveMapEntityId(config.map_entity, get('camera', 'map'));
+  const rooms = mapEntityId ? parseRoomsFromCamera(hass, mapEntityId, config.room_names) : [];
 
-  // Use room settings hook to read/write HA entities
   const { roomSettings, setSuctionLevel, setWetnessLevel, setCleaningTimes, setMopPressure, setMopTemperature } =
     useRoomSettings({
       hass,
-      baseEntityId,
       rooms: rooms.map((r) => ({ id: r.id, name: r.name })),
     });
 
@@ -357,48 +346,16 @@ export function CustomizeMode({ baseEntityId }: CustomizeModeProps) {
           const setting = roomSettings.get(room.id);
           if (!setting) return null;
 
-          // Check entity availability for each room setting
-          const suctionEntityId = buildSegmentEntityId(
-            'select',
-            baseEntityId,
-            room.id,
-            DREAME_SEGMENT_SELECTS.SUCTION_LEVEL.key
-          );
-          const wetnessEntityId = buildSegmentEntityId(
-            'number',
-            baseEntityId,
-            room.id,
-            DREAME_SEGMENT_NUMBERS.WETNESS_LEVEL.key
-          );
-          const cleaningTimesEntityId = buildSegmentEntityId(
-            'select',
-            baseEntityId,
-            room.id,
-            DREAME_SEGMENT_SELECTS.CLEANING_TIMES.key
-          );
-          const mopPressureEntityId = buildSegmentEntityId(
-            'select',
-            baseEntityId,
-            room.id,
-            DREAME_SEGMENT_SELECTS.MOP_PRESSURE.key
-          );
-          const mopTemperatureEntityId = buildSegmentEntityId(
-            'select',
-            baseEntityId,
-            room.id,
-            DREAME_SEGMENT_SELECTS.MOP_TEMPERATURE.key
-          );
-
-          const suctionState = getEntityState(hass, suctionEntityId);
-          const wetnessState = getEntityState(hass, wetnessEntityId);
-          const cleaningTimesState = getEntityState(hass, cleaningTimesEntityId);
-          const mopPressureState = getEntityState(hass, mopPressureEntityId);
-          const mopTemperatureState = getEntityState(hass, mopTemperatureEntityId);
+          const suctionState = getEntityState(hass, setting.suctionEntityId);
+          const wetnessState = getEntityState(hass, setting.wetnessEntityId);
+          const cleaningTimesState = getEntityState(hass, setting.cleaningTimesEntityId);
+          const mopPressureState = getEntityState(hass, setting.mopPressureEntityId);
+          const mopTemperatureState = getEntityState(hass, setting.mopTemperatureEntityId);
 
           // Build summary badges for accordion title
           const badges: string[] = [];
           if (setting.suctionLevel) badges.push(getSuctionShort(setting.suctionLevel));
-          if (setting.wetnessLevel !== null) {
+          if (setting.wetnessLevel !== null && Number.isFinite(setting.wetnessLevel)) {
             badges.push(getWetnessShort(setting.wetnessLevel, setting.wetnessMin, setting.wetnessMax));
           }
           if (setting.cleaningTimes) badges.push(`${setting.cleaningTimes}`);

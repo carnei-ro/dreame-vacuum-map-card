@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
-import { useTranslation, getButtonState } from '@/hooks';
-import { useEntity, useHass } from '@/contexts';
+import { useTranslation, getEntityState } from '@/hooks';
+import { useDeviceEntities, useHass } from '@/contexts';
 import type { EntityDefinition } from '@/config/entity-ui-mapping';
 import './EntityRenderers.scss';
 
@@ -8,28 +8,29 @@ interface EntityButtonProps {
   definition: EntityDefinition;
   isChild?: boolean;
   buttonLabel?: string;
+  label?: string;
 }
 
-export function EntityButton({ definition, isChild = false, buttonLabel }: EntityButtonProps) {
+export function EntityButton({ definition, isChild = false, buttonLabel, label }: EntityButtonProps) {
   const { t } = useTranslation();
-  const entity = useEntity();
   const hass = useHass();
-  const entityName = entity.entity_id.split('.')[1] ?? '';
-
-  const buttonState = getButtonState(hass, entityName, definition.key);
+  const { get } = useDeviceEntities();
+  const entityId = get(definition.platform, definition.key);
+  const buttonState = getEntityState(hass, entityId);
 
   const handlePress = useCallback(() => {
+    if (!entityId) return;
     hass.callService('button', 'press', {
-      entity_id: buttonState.entityId,
+      entity_id: entityId,
     });
-  }, [hass, buttonState.entityId]);
+  }, [entityId, hass]);
 
-  if (buttonState.disabled) return null;
+  if (!entityId || buttonState.disabled) return null;
 
   return (
     <div className={`entity-item ${isChild ? 'entity-item--child' : ''}`}>
       <div className="entity-item__info">
-        <span className="entity-item__label">{t(definition.labelKey)}</span>
+        <span className="entity-item__label">{label ?? t(definition.labelKey)}</span>
         {definition.descriptionKey && <span className="entity-item__description">{t(definition.descriptionKey)}</span>}
       </div>
       <button className="entity-item__button" disabled={buttonState.unavailable} onClick={handlePress}>

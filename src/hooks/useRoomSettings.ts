@@ -1,7 +1,79 @@
 import { useCallback, useMemo } from 'react';
-import type { Hass } from '@/types/homeassistant';
-import { buildSegmentEntityId, DREAME_SEGMENT_SELECTS, DREAME_SEGMENT_NUMBERS } from '@/constants';
+import type { Hass, HassEntity } from '@/types/homeassistant';
+import { DREAME_SEGMENT_NUMBERS, DREAME_SEGMENT_SELECTS } from '@/constants';
+import { useDeviceEntities } from '@/contexts/useVacuumCard';
 import { logger } from '@/utils/logger';
+
+const PLACEHOLDER_STATES = new Set(['unavailable', 'unknown', 'none']);
+
+/** Option strings the integration publishes for these selects. Used when HA replaces them with the unavailable placeholder. */
+const SUCTION_OPTIONS = ['quiet', 'standard', 'strong', 'turbo'];
+const SUCTION_BY_CODE: Record<number, string> = {
+  0: 'quiet',
+  1: 'standard',
+  2: 'strong',
+  3: 'turbo',
+};
+const CLEANING_TIMES_OPTIONS = ['1x', '2x', '3x'];
+const CLEANING_TIMES_BY_CODE: Record<number, string> = { 1: '1x', 2: '2x', 3: '3x' };
+const MOP_PRESSURE_OPTIONS = ['light', 'normal'];
+const MOP_PRESSURE_BY_CODE: Record<number, string> = { 0: 'light', 2: 'normal' };
+const MOP_TEMPERATURE_OPTIONS = ['normal', 'warm'];
+const MOP_TEMPERATURE_BY_CODE: Record<number, string> = { 0: 'normal', 1: 'warm' };
+
+interface SelectReading {
+  value: string | null;
+  options: string[];
+}
+
+function isPlaceholderState(state: string | null | undefined): boolean {
+  return !state || PLACEHOLDER_STATES.has(state.toLowerCase());
+}
+
+function publishedOptions(options: unknown): string[] {
+  if (!Array.isArray(options)) return [];
+  return options.filter((option): option is string => typeof option === 'string' && !isPlaceholderState(option));
+}
+
+function numericAttribute(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
+function finiteOr(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
+/**
+ * Room selects report state "unavailable" and options ["unavailable"] whenever the integration's
+ * segment_available_fn is false. The numeric code stays in attributes.value.
+ */
+export function readRoomSelect(
+  entity: Pick<HassEntity, 'state' | 'attributes'> | undefined,
+  fallbackOptions: readonly string[],
+  optionByCode: Readonly<Record<number, string>>
+): SelectReading {
+  if (!entity) return { value: null, options: [] };
+
+  const published = publishedOptions(entity.attributes.options);
+  const options = published.length > 0 ? published : [...fallbackOptions];
+  const state = isPlaceholderState(entity.state) ? null : entity.state;
+  if (state && options.includes(state)) {
+    return { value: state, options };
+  }
+
+  const fromCode = optionByCode[numericAttribute(entity.attributes.value) ?? Number.NaN] ?? null;
+  if (fromCode && options.includes(fromCode)) {
+    return { value: fromCode, options };
+  }
+
+  return { value: null, options };
+}
+
+export function readWetnessLevel(entity: Pick<HassEntity, 'state'> | undefined): number | null {
+  if (!entity || isPlaceholderState(entity.state)) return null;
+  const parsed = Number(entity.state);
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 export interface RoomSetting {
   roomId: number;
@@ -24,11 +96,15 @@ export interface RoomSetting {
   mopTemperatureOptions: string[];
   // Whether entities exist for this room
   hasEntities: boolean;
+  suctionEntityId?: string;
+  wetnessEntityId?: string;
+  cleaningTimesEntityId?: string;
+  mopPressureEntityId?: string;
+  mopTemperatureEntityId?: string;
 }
 
 interface UseRoomSettingsOptions {
   hass: Hass;
-  baseEntityId: string; // e.g., "dima"
   rooms: Array<{ id: number; name: string }>;
 }
 
@@ -44,41 +120,20 @@ interface UseRoomSettingsReturn {
 /**
  * Hook to read and write per-room cleaning settings from Home Assistant entities
  *
- * Entity patterns:
- * - select.{device}_room_{id}_suction_level
- * - number.{device}_room_{id}_wetness_level
- * - select.{device}_room_{id}_cleaning_times
- * - select.{device}_room_{id}_mop_pressure
- * - select.{device}_room_{id}_mop_temperature
  */
-export function useRoomSettings({ hass, baseEntityId, rooms }: UseRoomSettingsOptions): UseRoomSettingsReturn {
-  // Extract only the entity IDs we need to avoid depending on entire hass.states
+export function useRoomSettings({ hass, rooms }: UseRoomSettingsOptions): UseRoomSettingsReturn {
+  const { getRoom } = useDeviceEntities();
   const roomEntityIds = useMemo(() => {
     return rooms.map((room) => ({
       roomId: room.id,
       roomName: room.name,
-      suctionEntityId: buildSegmentEntityId('select', baseEntityId, room.id, DREAME_SEGMENT_SELECTS.SUCTION_LEVEL.key),
-      wetnessEntityId: buildSegmentEntityId('number', baseEntityId, room.id, DREAME_SEGMENT_NUMBERS.WETNESS_LEVEL.key),
-      cleaningTimesEntityId: buildSegmentEntityId(
-        'select',
-        baseEntityId,
-        room.id,
-        DREAME_SEGMENT_SELECTS.CLEANING_TIMES.key
-      ),
-      mopPressureEntityId: buildSegmentEntityId(
-        'select',
-        baseEntityId,
-        room.id,
-        DREAME_SEGMENT_SELECTS.MOP_PRESSURE.key
-      ),
-      mopTemperatureEntityId: buildSegmentEntityId(
-        'select',
-        baseEntityId,
-        room.id,
-        DREAME_SEGMENT_SELECTS.MOP_TEMPERATURE.key
-      ),
+      suctionEntityId: getRoom(room.id, 'select', DREAME_SEGMENT_SELECTS.SUCTION_LEVEL.key),
+      wetnessEntityId: getRoom(room.id, 'number', DREAME_SEGMENT_NUMBERS.WETNESS_LEVEL.key),
+      cleaningTimesEntityId: getRoom(room.id, 'select', DREAME_SEGMENT_SELECTS.CLEANING_TIMES.key),
+      mopPressureEntityId: getRoom(room.id, 'select', DREAME_SEGMENT_SELECTS.MOP_PRESSURE.key),
+      mopTemperatureEntityId: getRoom(room.id, 'select', DREAME_SEGMENT_SELECTS.MOP_TEMPERATURE.key),
     }));
-  }, [baseEntityId, rooms]);
+  }, [getRoom, rooms]);
 
   // Build room settings map from HA entity states
   // Only recalculate when relevant entities change
@@ -86,11 +141,15 @@ export function useRoomSettings({ hass, baseEntityId, rooms }: UseRoomSettingsOp
     const settings = new Map<number, RoomSetting>();
 
     for (const entityIds of roomEntityIds) {
-      const suctionEntity = hass.states[entityIds.suctionEntityId];
-      const wetnessEntity = hass.states[entityIds.wetnessEntityId];
-      const cleaningTimesEntity = hass.states[entityIds.cleaningTimesEntityId];
-      const mopPressureEntity = hass.states[entityIds.mopPressureEntityId];
-      const mopTemperatureEntity = hass.states[entityIds.mopTemperatureEntityId];
+      const suctionEntity = entityIds.suctionEntityId ? hass.states[entityIds.suctionEntityId] : undefined;
+      const wetnessEntity = entityIds.wetnessEntityId ? hass.states[entityIds.wetnessEntityId] : undefined;
+      const cleaningTimesEntity = entityIds.cleaningTimesEntityId
+        ? hass.states[entityIds.cleaningTimesEntityId]
+        : undefined;
+      const mopPressureEntity = entityIds.mopPressureEntityId ? hass.states[entityIds.mopPressureEntityId] : undefined;
+      const mopTemperatureEntity = entityIds.mopTemperatureEntityId
+        ? hass.states[entityIds.mopTemperatureEntityId]
+        : undefined;
 
       // Check if at least one entity exists
       const hasEntities = !!(
@@ -101,26 +160,31 @@ export function useRoomSettings({ hass, baseEntityId, rooms }: UseRoomSettingsOp
         mopTemperatureEntity
       );
 
+      const suction = readRoomSelect(suctionEntity, SUCTION_OPTIONS, SUCTION_BY_CODE);
+      const cleaningTimes = readRoomSelect(cleaningTimesEntity, CLEANING_TIMES_OPTIONS, CLEANING_TIMES_BY_CODE);
+      const mopPressure = readRoomSelect(mopPressureEntity, MOP_PRESSURE_OPTIONS, MOP_PRESSURE_BY_CODE);
+      const mopTemperature = readRoomSelect(mopTemperatureEntity, MOP_TEMPERATURE_OPTIONS, MOP_TEMPERATURE_BY_CODE);
+
       settings.set(entityIds.roomId, {
         roomId: entityIds.roomId,
         roomName: entityIds.roomName,
-        // Suction level
-        suctionLevel: suctionEntity?.state ?? null,
-        suctionLevelOptions: (suctionEntity?.attributes?.options as string[]) ?? [],
-        // Wetness level
-        wetnessLevel: wetnessEntity ? parseFloat(wetnessEntity.state) : null,
-        wetnessMin: (wetnessEntity?.attributes?.min as number) ?? 1,
-        wetnessMax: (wetnessEntity?.attributes?.max as number) ?? 32,
-        // Cleaning times
-        cleaningTimes: cleaningTimesEntity?.state ?? null,
-        cleaningTimesOptions: (cleaningTimesEntity?.attributes?.options as string[]) ?? [],
-        // Mop pressure
-        mopPressure: mopPressureEntity?.state ?? null,
-        mopPressureOptions: (mopPressureEntity?.attributes?.options as string[]) ?? [],
-        // Mop temperature
-        mopTemperature: mopTemperatureEntity?.state ?? null,
-        mopTemperatureOptions: (mopTemperatureEntity?.attributes?.options as string[]) ?? [],
+        suctionLevel: suction.value,
+        suctionLevelOptions: suction.options,
+        wetnessLevel: readWetnessLevel(wetnessEntity),
+        wetnessMin: finiteOr(wetnessEntity?.attributes?.min, 1),
+        wetnessMax: finiteOr(wetnessEntity?.attributes?.max, 32),
+        cleaningTimes: cleaningTimes.value,
+        cleaningTimesOptions: cleaningTimes.options,
+        mopPressure: mopPressure.value,
+        mopPressureOptions: mopPressure.options,
+        mopTemperature: mopTemperature.value,
+        mopTemperatureOptions: mopTemperature.options,
         hasEntities,
+        suctionEntityId: entityIds.suctionEntityId,
+        wetnessEntityId: entityIds.wetnessEntityId,
+        cleaningTimesEntityId: entityIds.cleaningTimesEntityId,
+        mopPressureEntityId: entityIds.mopPressureEntityId,
+        mopTemperatureEntityId: entityIds.mopTemperatureEntityId,
       });
     }
 
@@ -130,66 +194,52 @@ export function useRoomSettings({ hass, baseEntityId, rooms }: UseRoomSettingsOp
   // Set suction level for a room
   const setSuctionLevel = useCallback(
     (roomId: number, value: string) => {
-      const entityId = buildSegmentEntityId('select', baseEntityId, roomId, DREAME_SEGMENT_SELECTS.SUCTION_LEVEL.key);
+      const entityId = getRoom(roomId, 'select', DREAME_SEGMENT_SELECTS.SUCTION_LEVEL.key);
+      if (!entityId) return;
       logger.debug('RoomSettings', 'Setting suction level:', { roomId, value, entityId });
-      hass.callService('select', 'select_option', {
-        entity_id: entityId,
-        option: value,
-      });
+      hass.callService('select', 'select_option', { entity_id: entityId, option: value });
     },
-    [hass, baseEntityId]
+    [getRoom, hass]
   );
 
-  // Set wetness level for a room
   const setWetnessLevel = useCallback(
     (roomId: number, value: number) => {
-      const entityId = buildSegmentEntityId('number', baseEntityId, roomId, DREAME_SEGMENT_NUMBERS.WETNESS_LEVEL.key);
+      const entityId = getRoom(roomId, 'number', DREAME_SEGMENT_NUMBERS.WETNESS_LEVEL.key);
+      if (!entityId) return;
       logger.debug('RoomSettings', 'Setting wetness level:', { roomId, value, entityId });
-      hass.callService('number', 'set_value', {
-        entity_id: entityId,
-        value: value,
-      });
+      hass.callService('number', 'set_value', { entity_id: entityId, value });
     },
-    [hass, baseEntityId]
+    [getRoom, hass]
   );
 
-  // Set cleaning times for a room
   const setCleaningTimes = useCallback(
     (roomId: number, value: string) => {
-      const entityId = buildSegmentEntityId('select', baseEntityId, roomId, DREAME_SEGMENT_SELECTS.CLEANING_TIMES.key);
+      const entityId = getRoom(roomId, 'select', DREAME_SEGMENT_SELECTS.CLEANING_TIMES.key);
+      if (!entityId) return;
       logger.debug('RoomSettings', 'Setting cleaning times:', { roomId, value, entityId });
-      hass.callService('select', 'select_option', {
-        entity_id: entityId,
-        option: value,
-      });
+      hass.callService('select', 'select_option', { entity_id: entityId, option: value });
     },
-    [hass, baseEntityId]
+    [getRoom, hass]
   );
 
-  // Set mop pressure for a room
   const setMopPressure = useCallback(
     (roomId: number, value: string) => {
-      const entityId = buildSegmentEntityId('select', baseEntityId, roomId, DREAME_SEGMENT_SELECTS.MOP_PRESSURE.key);
+      const entityId = getRoom(roomId, 'select', DREAME_SEGMENT_SELECTS.MOP_PRESSURE.key);
+      if (!entityId) return;
       logger.debug('RoomSettings', 'Setting mop pressure:', { roomId, value, entityId });
-      hass.callService('select', 'select_option', {
-        entity_id: entityId,
-        option: value,
-      });
+      hass.callService('select', 'select_option', { entity_id: entityId, option: value });
     },
-    [hass, baseEntityId]
+    [getRoom, hass]
   );
 
-  // Set mop temperature for a room
   const setMopTemperature = useCallback(
     (roomId: number, value: string) => {
-      const entityId = buildSegmentEntityId('select', baseEntityId, roomId, DREAME_SEGMENT_SELECTS.MOP_TEMPERATURE.key);
+      const entityId = getRoom(roomId, 'select', DREAME_SEGMENT_SELECTS.MOP_TEMPERATURE.key);
+      if (!entityId) return;
       logger.debug('RoomSettings', 'Setting mop temperature:', { roomId, value, entityId });
-      hass.callService('select', 'select_option', {
-        entity_id: entityId,
-        option: value,
-      });
+      hass.callService('select', 'select_option', { entity_id: entityId, option: value });
     },
-    [hass, baseEntityId]
+    [getRoom, hass]
   );
 
   return {

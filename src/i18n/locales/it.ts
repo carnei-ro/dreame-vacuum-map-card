@@ -248,6 +248,9 @@ export const it: Translation = {
       remaining: 'rimanente',
       reset: 'Reimposta',
     },
+    more: {
+      title: 'Altro',
+    },
     device_info: {
       title: 'Informazioni dispositivo',
       firmware: 'Firmware',

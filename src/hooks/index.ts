@@ -3,6 +3,7 @@
  */
 
 export { useHomeAssistantServices } from './useHomeAssistantServices';
+export { useLoadDeviceEntities } from './useLoadDeviceEntities';
 export { useVacuumEntityIds } from './useVacuumEntityIds';
 export { useCardUIState } from './useCardUIState';
 export { useVacuumServices } from './useVacuumServices';
@@ -11,20 +12,12 @@ export { useTranslation } from './useTranslation';
 export { useTheme } from './useTheme';
 export { useButtonConfig } from './useButtonConfig';
 export { useRoomSettings } from './useRoomSettings';
-export {
-  getEntityState,
-  getSwitchState,
-  getSelectState,
-  getNumberState,
-  getButtonState,
-  getTimeState,
-} from './useEntityState';
-export { useVacuumCapabilities } from './useVacuumCapabilities';
+export { getEntityState } from './useEntityState';
 export { useVacuumMachineState } from './useVacuumMachineState';
 export { useMapGeometry } from './useMapGeometry';
+export type { DeviceEntities, DeviceEntityExtra } from './useLoadDeviceEntities';
 export type { VacuumEntityIds } from './useVacuumEntityIds';
 export type { RoomSetting } from './useRoomSettings';
 export type { EntityState } from './useEntityState';
-export type { VacuumCapabilities } from './useVacuumCapabilities';
 export type { VacuumMachineState, VacuumControls } from './useVacuumMachineState';
 export type { MapGeometry } from './useMapGeometry';

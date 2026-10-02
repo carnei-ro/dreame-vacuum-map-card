@@ -3,28 +3,22 @@ import { EntitySelect } from './EntitySelect';
 import { EntityNumber } from './EntityNumber';
 import { EntityButton } from './EntityButton';
 import { EntityTime } from './EntityTime';
-import { getSwitchState, useVacuumCapabilities } from '@/hooks';
-import { useEntity, useHass } from '@/contexts';
+import { getEntityState } from '@/hooks';
+import { useDeviceEntities, useHass } from '@/contexts';
 import type { EntityDefinition } from '@/config/entity-ui-mapping';
-import type { CapabilityString } from '@/constants';
 
 interface EntityRendererProps {
   definition: EntityDefinition;
   isChild?: boolean;
+  label?: string;
 }
 
-export function EntityRenderer({ definition, isChild = false }: EntityRendererProps) {
-  const entity = useEntity();
+export function EntityRenderer({ definition, isChild = false, label }: EntityRendererProps) {
   const hass = useHass();
-  const entityName = entity.entity_id.split('.')[1] ?? '';
-  const capabilities = useVacuumCapabilities();
-
-  if (definition.capability && !capabilities.has(definition.capability as CapabilityString)) {
-    return null;
-  }
+  const { get } = useDeviceEntities();
 
   if (definition.parentKey) {
-    const parentState = getSwitchState(hass, entityName, definition.parentKey);
+    const parentState = getEntityState(hass, get('switch', definition.parentKey));
     if (!parentState.isOn) {
       return null;
     }
@@ -34,15 +28,15 @@ export function EntityRenderer({ definition, isChild = false }: EntityRendererPr
 
   switch (definition.platform) {
     case 'switch':
-      return <EntitySwitch definition={definition} isChild={isChildItem} />;
+      return <EntitySwitch definition={definition} isChild={isChildItem} label={label} />;
     case 'select':
-      return <EntitySelect definition={definition} isChild={isChildItem} />;
+      return <EntitySelect definition={definition} isChild={isChildItem} label={label} />;
     case 'number':
-      return <EntityNumber definition={definition} isChild={isChildItem} />;
+      return <EntityNumber definition={definition} isChild={isChildItem} label={label} />;
     case 'button':
-      return <EntityButton definition={definition} isChild={isChildItem} />;
+      return <EntityButton definition={definition} isChild={isChildItem} label={label} />;
     case 'time':
-      return <EntityTime definition={definition} isChild={isChildItem} />;
+      return <EntityTime definition={definition} isChild={isChildItem} label={label} />;
     default:
       return null;
   }

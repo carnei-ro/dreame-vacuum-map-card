@@ -247,6 +247,9 @@ export const nl: Translation = {
       remaining: 'resterend',
       reset: 'Resetten',
     },
+    more: {
+      title: 'Meer',
+    },
     device_info: {
       title: 'Apparaatinfo',
       firmware: 'Firmware',

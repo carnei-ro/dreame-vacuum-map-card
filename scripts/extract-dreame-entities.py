@@ -6,7 +6,6 @@ Extract entity definitions from dreame-vacuum integration.
 import os
 import re
 import sys
-from datetime import datetime
 from pathlib import Path
 
 DEFAULT_INTEGRATION_PATH = os.path.expanduser("~/Projects/dreame-vacuum")
@@ -87,88 +86,6 @@ def extract_entities_regex(file_path: Path, description_class: str) -> list[dict
     return entities
 
 
-def extract_enum_members(file_path: Path, enum_name: str) -> list[str]:
-    if not file_path.exists():
-        return []
-
-    content = file_path.read_text()
-    members = []
-
-    # Find the enum class
-    pattern = rf'class {enum_name}\([^)]+\):\s*(?:"""[^"]*"""\s*)?((?:\s+\w+\s*=\s*[^\n]+\n?)+)'
-    match = re.search(pattern, content)
-
-    if match:
-        enum_body = match.group(1)
-        for line in enum_body.split("\n"):
-            member_match = re.match(r"\s+(\w+)\s*=", line)
-            if member_match:
-                members.append(member_match.group(1))
-
-    return members
-
-
-def extract_capabilities(integration_path: Path) -> list[str]:
-    capabilities = set()
-
-    types_file = integration_path / "dreame" / "types.py"
-    if not types_file.exists():
-        return []
-
-    content = types_file.read_text()
-
-    # Extract from DreameVacuumDeviceCapability class __init__ method
-    # Look for "self.capability_name = False" or "self.capability_name = True" patterns
-    class_match = re.search(
-        r"class DreameVacuumDeviceCapability:.*?def __init__\(self.*?\).*?:(.*?)(?=\n    def |\n    @property|\nclass |\Z)",
-        content,
-        re.DOTALL,
-    )
-
-    if class_match:
-        init_body = class_match.group(1)
-        # Match self.attr = False/True/None/value patterns (capability attributes)
-        attr_matches = re.findall(r"self\.(\w+)\s*=\s*(?:False|True|None|\d+|\")", init_body)
-        for attr in attr_matches:
-            # Skip private attributes and non-capability ones
-            if not attr.startswith("_") and attr not in ("key", "list", "robot_type"):
-                capabilities.add(attr)
-
-    # Extract @property methods in DreameVacuumDeviceCapability that return bool
-    # These are dynamic capabilities like 'map', 'cruising', 'custom_cleaning_mode'
-    class_full_match = re.search(
-        r"class DreameVacuumDeviceCapability:(.*?)(?=\nclass |\Z)",
-        content,
-        re.DOTALL,
-    )
-
-    if class_full_match:
-        class_body = class_full_match.group(1)
-        # Find @property decorated methods
-        property_matches = re.findall(
-            r"@property\s+def\s+(\w+)\(self\)\s*->\s*bool:",
-            class_body,
-        )
-        for prop in property_matches:
-            if not prop.startswith("_"):
-                capabilities.add(prop)
-
-    # Also extract from DeviceCapability enum for completeness
-    enum_match = re.search(
-        r"class DeviceCapability\(IntEnum\):(.*?)(?=\nclass |\Z)",
-        content,
-        re.DOTALL,
-    )
-
-    if enum_match:
-        enum_body = enum_match.group(1)
-        enum_members = re.findall(r"^\s+(\w+)\s*=\s*\d+", enum_body, re.MULTILINE)
-        for member in enum_members:
-            capabilities.add(member.lower())
-
-    return sorted(capabilities)
-
-
 def extract_services(file_path: Path) -> list[dict]:
     if not file_path.exists():
         return []
@@ -188,6 +105,69 @@ def extract_services(file_path: Path) -> list[dict]:
                 services.append({"key": service_name})
 
     return services
+
+
+def balanced_body(content: str, open_index: int) -> str:
+    depth = 0
+    for index in range(open_index, len(content)):
+        char = content[index]
+        if char == "(":
+            depth += 1
+        elif char == ")":
+            depth -= 1
+            if depth == 0:
+                return content[open_index + 1 : index]
+    return ""
+
+
+def assignment_tuple_body(content: str, name: str) -> str:
+    match = re.search(rf"\b{name}\s*(?::[^=]+)?=\s*\(", content)
+    if match is None:
+        return ""
+    return balanced_body(content, match.end() - 1)
+
+
+def description_blocks(content: str, description_class: str) -> list[str]:
+    needle = f"{description_class}("
+    blocks: list[str] = []
+    start = 0
+    while True:
+        index = content.find(needle, start)
+        if index < 0:
+            return blocks
+        blocks.append(balanced_body(content, index + len(description_class)))
+        start = index + len(needle)
+
+
+def entity_from_block(block: str) -> dict:
+    entity: dict = {}
+    prop_match = re.search(r"property_key\s*=\s*(?:DreameVacuum\w+\.)?(\w+)", block)
+    if prop_match:
+        entity["property_key"] = prop_match.group(1)
+    key_match = re.search(r'(?<![_\w])key\s*=\s*["\']([^"\']+)["\']', block)
+    if key_match:
+        entity["key"] = key_match.group(1)
+    if "key" not in entity:
+        dyn_key_match = re.search(
+            r"(?<![_\w])key\s*=\s*DreameVacuumProperty\.(\w+)\.name\.lower\s*\(",
+            block,
+        )
+        if dyn_key_match:
+            entity["key"] = dyn_key_match.group(1).lower()
+    return entity
+
+
+def extract_segment_entities(
+    content: str, tuple_name: str, description_class: str
+) -> list[dict]:
+    entities = []
+    for block in description_blocks(
+        assignment_tuple_body(content, tuple_name), description_class
+    ):
+        entity = entity_from_block(block)
+        if entity.get("key") or entity.get("property_key"):
+            entities.append(entity)
+    return entities
 
 
 def entity_to_key(entity: dict) -> str:
@@ -217,23 +197,19 @@ def generate_typescript(
     buttons: list[dict],
     numbers: list[dict],
     times: list[dict],
-    binary_sensors: list[dict],
     services: list[dict],
-    capabilities: list[str],
-    properties: list[str],
-    actions: list[str],
     segment_selects: list[dict],
     segment_numbers: list[dict],
     version: str,
 ) -> str:
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
     lines = [
         "/**",
         " * AUTO-GENERATED FILE - DO NOT EDIT MANUALLY",
         f" * Source: dreame-vacuum integration {version}",
-        f" * Generated: {timestamp}",
-        " * ",
+        " *",
+        " * Translation keys the card references. Entity ids come from the",
+        " * Home Assistant entity registry, not from this file.",
+        " *",
         " * Run: python scripts/extract-dreame-entities.py",
         " */",
         "",
@@ -265,15 +241,6 @@ def generate_typescript(
         lines.append("} as const;")
         lines.append("")
 
-    def write_simple_object(name: str, items: list[str]) -> None:
-        lines.append(f"export const {name} = {{")
-        for item in items:
-            upper_key = item.upper()
-            lower_val = item.lower()
-            lines.append(f"  {upper_key}: '{lower_val}',")
-        lines.append("} as const;")
-        lines.append("")
-
     def write_services_object(services_list: list[dict]) -> None:
         lines.append("export const DREAME_SERVICES = {")
         for service in services_list:
@@ -290,49 +257,12 @@ def generate_typescript(
     write_entity_object("DREAME_BUTTONS", buttons, "button")
     write_entity_object("DREAME_NUMBERS", numbers, "number")
     write_entity_object("DREAME_TIMES", times, "time")
-    write_entity_object("DREAME_BINARY_SENSORS", binary_sensors, "binary_sensor")
 
     lines.append("// Per-room entity templates")
     write_entity_object("DREAME_SEGMENT_SELECTS", segment_selects, "select")
     write_entity_object("DREAME_SEGMENT_NUMBERS", segment_numbers, "number")
 
     write_services_object(services)
-    write_simple_object("DREAME_CAPABILITIES", capabilities)
-    write_simple_object("DREAME_PROPERTIES", properties)
-    write_simple_object("DREAME_ACTIONS", actions)
-
-    lines.extend(
-        [
-            "// Helper types",
-            "export type DreameSensorKey = keyof typeof DREAME_SENSORS;",
-            "export type DreameSwitchKey = keyof typeof DREAME_SWITCHES;",
-            "export type DreameSelectKey = keyof typeof DREAME_SELECTS;",
-            "export type DreameButtonKey = keyof typeof DREAME_BUTTONS;",
-            "export type DreameNumberKey = keyof typeof DREAME_NUMBERS;",
-            "export type DreameTimeKey = keyof typeof DREAME_TIMES;",
-            "export type DreameBinarySensorKey = keyof typeof DREAME_BINARY_SENSORS;",
-            "export type DreameServiceKey = keyof typeof DREAME_SERVICES;",
-            "export type DreameCapability = keyof typeof DREAME_CAPABILITIES;",
-            "",
-            "export function buildEntityId(",
-            "  platform: string,",
-            "  deviceName: string,",
-            "  entityKey: string",
-            "): string {",
-            "  return `${platform}.${deviceName}_${entityKey}`;",
-            "}",
-            "",
-            "export function buildSegmentEntityId(",
-            "  platform: string,",
-            "  deviceName: string,",
-            "  segmentId: number,",
-            "  entityKey: string",
-            "): string {",
-            "  return `${platform}.${deviceName}_room_${segmentId}_${entityKey}`;",
-            "}",
-            "",
-        ]
-    )
 
     return "\n".join(lines)
 
@@ -371,103 +301,34 @@ def main():
     times = extract_entities_regex(
         integration_path / "time.py", "DreameVacuumTimeEntityDescription"
     )
-    binary_sensors = extract_entities_regex(
-        integration_path / "binary_sensor.py",
-        "DreameVacuumBinarySensorEntityDescription",
-    )
-
-    # For segment entities, we need to check the SEGMENT_ tuples
-    # These use the same description classes but are in separate tuples
-    segment_selects_content = (
+    select_source = (
         (integration_path / "select.py").read_text()
         if (integration_path / "select.py").exists()
         else ""
     )
-    segment_numbers_content = (
+    number_source = (
         (integration_path / "number.py").read_text()
         if (integration_path / "number.py").exists()
         else ""
     )
-
-    # Extract segment entities by finding SEGMENT_SELECTS and SEGMENT_NUMBERS sections
-    segment_selects = []
-    segment_numbers = []
-
-    # Find SEGMENT_SELECTS section
-    seg_sel_match = re.search(
-        r"SEGMENT_SELECTS.*?=.*?\((.*?)\)\s*(?=\n\w|\nclass|\nasync|\Z)",
-        segment_selects_content,
-        re.DOTALL,
+    segment_selects = extract_segment_entities(
+        select_source, "SEGMENT_SELECTS", "DreameVacuumSelectEntityDescription"
     )
-    if seg_sel_match:
-        seg_content = seg_sel_match.group(1)
-        for match in re.finditer(
-            r"DreameVacuumSelectEntityDescription\(\s*([^)]+(?:\([^)]*\)[^)]*)*)\)",
-            seg_content,
-            re.DOTALL,
-        ):
-            block = match.group(1)
-            entity = {}
-            prop_match = re.search(
-                r"property_key\s*=\s*(?:DreameVacuum\w+\.)?(\w+)", block
-            )
-            if prop_match:
-                entity["property_key"] = prop_match.group(1)
-            key_match = re.search(r'(?<![_\w])key\s*=\s*["\']([^"\']+)["\']', block)
-            if key_match:
-                entity["key"] = key_match.group(1)
-            if entity:
-                segment_selects.append(entity)
-
-    # Find SEGMENT_NUMBERS section
-    seg_num_match = re.search(
-        r"SEGMENT_NUMBERS.*?=.*?\((.*?)\)\s*(?=\n\w|\nclass|\nasync|\Z)",
-        segment_numbers_content,
-        re.DOTALL,
+    segment_numbers = extract_segment_entities(
+        number_source, "SEGMENT_NUMBERS", "DreameVacuumNumberEntityDescription"
     )
-    if seg_num_match:
-        seg_content = seg_num_match.group(1)
-        for match in re.finditer(
-            r"DreameVacuumNumberEntityDescription\(\s*([^)]+(?:\([^)]*\)[^)]*)*)\)",
-            seg_content,
-            re.DOTALL,
-        ):
-            block = match.group(1)
-            entity = {}
-            prop_match = re.search(
-                r"property_key\s*=\s*(?:DreameVacuum\w+\.)?(\w+)", block
-            )
-            if prop_match:
-                entity["property_key"] = prop_match.group(1)
-            key_match = re.search(r'(?<![_\w])key\s*=\s*["\']([^"\']+)["\']', block)
-            if key_match:
-                entity["key"] = key_match.group(1)
-            if entity:
-                segment_numbers.append(entity)
 
-    # Extract services
     services = extract_services(integration_path / "services.yaml")
-
-    # Extract capabilities
-    capabilities = extract_capabilities(integration_path)
-
-    # Extract properties and actions from types.py
-    types_file = integration_path / "dreame" / "types.py"
-    properties = extract_enum_members(types_file, "DreameVacuumProperty")
-    actions = extract_enum_members(types_file, "DreameVacuumAction")
 
     print(
         f"Found: {len(sensors)} sensors, {len(switches)} switches, {len(selects)} selects"
     )
     print(f"Found: {len(buttons)} buttons, {len(numbers)} numbers, {len(times)} times")
-    print(f"Found: {len(binary_sensors)} binary_sensors")
     print(
         f"Found: {len(segment_selects)} segment_selects, {len(segment_numbers)} segment_numbers"
     )
-    print(f"Found: {len(services)} services, {len(capabilities)} capabilities")
-    print(f"Found: {len(properties)} properties, {len(actions)} actions")
+    print(f"Found: {len(services)} services")
 
-    # Generate TypeScript
     ts_content = generate_typescript(
         sensors=sensors,
         switches=switches,
@@ -475,11 +336,7 @@ def main():
         buttons=buttons,
         numbers=numbers,
         times=times,
-        binary_sensors=binary_sensors,
         services=services,
-        capabilities=capabilities,
-        properties=properties,
-        actions=actions,
         segment_selects=segment_selects,
         segment_numbers=segment_numbers,
         version=version,

@@ -247,6 +247,9 @@ export const pl: Translation = {
       remaining: 'pozostało',
       reset: 'Resetuj',
     },
+    more: {
+      title: 'Więcej',
+    },
     device_info: {
       title: 'Informacje o urządzeniu',
       firmware: 'Oprogramowanie układowe',

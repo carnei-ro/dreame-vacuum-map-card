@@ -1,13 +1,13 @@
-import { useCallback } from 'react';
 import { SegmentedControl } from '@/components/common';
-import { useTranslation, getSelectState } from '@/hooks';
-import { useEntity, useHass } from '@/contexts';
+import { useTranslation, getEntityState } from '@/hooks';
+import { useDeviceEntities, useHass } from '@/contexts';
 import type { EntityDefinition } from '@/config/entity-ui-mapping';
 import './EntityRenderers.scss';
 
 interface EntitySelectProps {
   definition: EntityDefinition;
   isChild?: boolean;
+  label?: string;
 }
 
 function formatOptionLabel(option: string): string {
@@ -17,27 +17,23 @@ function formatOptionLabel(option: string): string {
     .join(' ');
 }
 
-export function EntitySelect({ definition, isChild = false }: EntitySelectProps) {
+export function EntitySelect({ definition, isChild = false, label }: EntitySelectProps) {
   const { t } = useTranslation();
-  const entity = useEntity();
   const hass = useHass();
-  const entityName = entity.entity_id.split('.')[1] ?? '';
-  const entityId = `select.${entityName}_${definition.key}`;
-
-  const selectState = getSelectState(hass, entityName, definition.key);
+  const { get } = useDeviceEntities();
+  const entityId = get(definition.platform, definition.key);
+  const selectState = getEntityState(hass, entityId);
   const options = (selectState.attributes.options as string[]) ?? [];
 
-  const handleChange = useCallback(
-    (value: string) => {
-      hass.callService('select', 'select_option', {
-        entity_id: entityId,
-        option: value,
-      });
-    },
-    [hass, entityId]
-  );
+  function handleChange(value: string): void {
+    if (!entityId) return;
+    hass.callService('select', 'select_option', {
+      entity_id: entityId,
+      option: value,
+    });
+  }
 
-  if (selectState.disabled || options.length === 0) return null;
+  if (!entityId || selectState.disabled || options.length === 0) return null;
 
   const currentValue = selectState.state ?? options[0] ?? '';
 
@@ -50,7 +46,7 @@ export function EntitySelect({ definition, isChild = false }: EntitySelectProps)
     return (
       <div className={`entity-item entity-item--segmented ${isChild ? 'entity-item--child' : ''}`}>
         <div className="entity-item__info">
-          <span className="entity-item__label">{t(definition.labelKey)}</span>
+          <span className="entity-item__label">{label ?? t(definition.labelKey)}</span>
           {definition.descriptionKey && (
             <span className="entity-item__description">{t(definition.descriptionKey)}</span>
           )}
@@ -68,7 +64,7 @@ export function EntitySelect({ definition, isChild = false }: EntitySelectProps)
   return (
     <div className={`entity-item entity-item--select ${isChild ? 'entity-item--child' : ''}`}>
       <div className="entity-item__info">
-        <span className="entity-item__label">{t(definition.labelKey)}</span>
+        <span className="entity-item__label">{label ?? t(definition.labelKey)}</span>
         {definition.descriptionKey && <span className="entity-item__description">{t(definition.descriptionKey)}</span>}
       </div>
       <select

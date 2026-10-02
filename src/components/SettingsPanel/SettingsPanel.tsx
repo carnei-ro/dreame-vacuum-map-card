@@ -1,6 +1,20 @@
 import { Modal, Accordion } from '@/components/common';
-import { useTranslation, useVacuumCapabilities } from '@/hooks';
-import { CAPABILITY } from '@/constants';
+import { useTranslation } from '@/hooks';
+import { useDeviceEntities } from '@/contexts';
+import { EntityRenderer } from './EntityRenderers';
+import {
+  AI_DETECTION_SECTION,
+  CARPET_SETTINGS_SECTION,
+  DOCK_SETTINGS_SECTION,
+  EDGE_CORNER_SECTION,
+  FLOOR_SETTINGS_SECTION,
+  MAP_SETTINGS_SECTION,
+  QUICK_ACTIONS_SECTION,
+  QUICK_SETTINGS_SECTION,
+  VOLUME_SECTION,
+  type EntityPlatform,
+  type SectionDefinition,
+} from '@/config/entity-ui-mapping';
 import { AIDetectionSection } from './sections/AIDetectionSection';
 import { CarpetSettingsSection } from './sections/CarpetSettingsSection';
 import { ConsumablesSection } from './sections/ConsumablesSection';
@@ -11,7 +25,19 @@ import { FloorSettingsSection } from './sections/FloorSettingsSection';
 import { MapSettingsSection } from './sections/MapSettingsSection';
 import { QuickSettingsSection } from './sections/QuickSettingsSection';
 import { VolumeSection } from './sections/VolumeSection';
-import { Brain, Gauge, Info, Layers, Settings2, Volume2, Footprints, CornerDownRight, Dock, Map } from 'lucide-react';
+import {
+  Brain,
+  Gauge,
+  Info,
+  Layers,
+  Settings2,
+  Volume2,
+  Footprints,
+  CornerDownRight,
+  Dock,
+  Map,
+  Ellipsis,
+} from 'lucide-react';
 import './SettingsPanel.scss';
 
 interface SettingsPanelProps {
@@ -19,29 +45,16 @@ interface SettingsPanelProps {
   onClose: () => void;
 }
 
+function sectionHasEntities(section: SectionDefinition, getEntity: DeviceEntityLookup): boolean {
+  return section.entities.some((entity) => getEntity(entity.platform, entity.key));
+}
+
+type DeviceEntityLookup = (domain: string, translationKey: string) => string | undefined;
+
 export function SettingsPanel({ opened, onClose }: SettingsPanelProps) {
   const { t } = useTranslation();
-  const capabilities = useVacuumCapabilities();
-
-  // Check capabilities for each section
-  const hasCarpetRecognition = capabilities.has(CAPABILITY.CARPET_RECOGNITION);
-  const hasAiDetection = capabilities.has(CAPABILITY.AI_DETECTION);
-  const hasEdgeCorner = capabilities.hasAny(
-    CAPABILITY.MOP_PAD_LIFTING,
-    CAPABILITY.SIDE_REACH,
-    CAPABILITY.MOP_PAD_SWING
-  );
-  const hasDockFeatures = capabilities.hasAny(
-    CAPABILITY.AUTO_EMPTY_BASE,
-    CAPABILITY.SELF_WASH_BASE,
-    CAPABILITY.AUTO_ADD_DETERGENT,
-    CAPABILITY.SMART_MOP_WASHING,
-    CAPABILITY.WASHING_MODE,
-    CAPABILITY.HOT_WASHING,
-    CAPABILITY.OFF_PEAK_CHARGING,
-    CAPABILITY.STATION_CLEANING,
-    CAPABILITY.AUTO_REWASHING
-  );
+  const { status, get, extras } = useDeviceEntities();
+  const entitiesReady = status === 'ready';
 
   return (
     <Modal opened={opened} onClose={onClose}>
@@ -54,45 +67,70 @@ export function SettingsPanel({ opened, onClose }: SettingsPanelProps) {
               <ConsumablesSection />
             </Accordion>
 
-            <Accordion title={t('settings.quick_settings.title')} icon={<Settings2 />}>
-              <QuickSettingsSection />
-            </Accordion>
+            {entitiesReady &&
+              (sectionHasEntities(QUICK_SETTINGS_SECTION, get) || sectionHasEntities(QUICK_ACTIONS_SECTION, get)) && (
+                <Accordion title={t('settings.quick_settings.title')} icon={<Settings2 />}>
+                  <QuickSettingsSection />
+                </Accordion>
+              )}
 
-            {hasCarpetRecognition && (
+            {entitiesReady && sectionHasEntities(CARPET_SETTINGS_SECTION, get) && (
               <Accordion title={t('settings.carpet.title')} icon={<Layers />}>
                 <CarpetSettingsSection />
               </Accordion>
             )}
 
-            <Accordion title={t('settings.floor.title')} icon={<Footprints />}>
-              <FloorSettingsSection />
-            </Accordion>
+            {entitiesReady && sectionHasEntities(FLOOR_SETTINGS_SECTION, get) && (
+              <Accordion title={t('settings.floor.title')} icon={<Footprints />}>
+                <FloorSettingsSection />
+              </Accordion>
+            )}
 
-            {hasEdgeCorner && (
+            {entitiesReady && sectionHasEntities(EDGE_CORNER_SECTION, get) && (
               <Accordion title={t('settings.edge_corner.title')} icon={<CornerDownRight />}>
                 <EdgeCornerSection />
               </Accordion>
             )}
 
-            <Accordion title={t('settings.volume.title')} icon={<Volume2 />}>
-              <VolumeSection />
-            </Accordion>
+            {entitiesReady && sectionHasEntities(VOLUME_SECTION, get) && (
+              <Accordion title={t('settings.volume.title')} icon={<Volume2 />}>
+                <VolumeSection />
+              </Accordion>
+            )}
 
-            {hasDockFeatures && (
+            {entitiesReady && sectionHasEntities(DOCK_SETTINGS_SECTION, get) && (
               <Accordion title={t('settings.dock.title')} icon={<Dock />}>
                 <DockSettingsSection />
               </Accordion>
             )}
 
-            {hasAiDetection && (
+            {entitiesReady && sectionHasEntities(AI_DETECTION_SECTION, get) && (
               <Accordion title={t('settings.ai_detection.title')} icon={<Brain />}>
                 <AIDetectionSection />
               </Accordion>
             )}
 
-            <Accordion title={t('settings.map.title')} icon={<Map />}>
-              <MapSettingsSection />
-            </Accordion>
+            {entitiesReady && sectionHasEntities(MAP_SETTINGS_SECTION, get) && (
+              <Accordion title={t('settings.map.title')} icon={<Map />}>
+                <MapSettingsSection />
+              </Accordion>
+            )}
+
+            {extras.length > 0 && (
+              <Accordion title={t('settings.more.title')} icon={<Ellipsis />}>
+                {extras.map((extra) => (
+                  <EntityRenderer
+                    key={extra.entityId}
+                    label={extra.friendlyName}
+                    definition={{
+                      key: extra.translationKey,
+                      platform: extra.domain as EntityPlatform,
+                      labelKey: 'settings.more.title',
+                    }}
+                  />
+                ))}
+              </Accordion>
+            )}
 
             <Accordion title={t('settings.device_info.title')} icon={<Info />}>
               <DeviceInfoSection />

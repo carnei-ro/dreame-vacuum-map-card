@@ -2,7 +2,7 @@ name: Sync Dreame Entities
 
 on:
   schedule:
-    - cron: '0 0 * * 0' # Weekly on Sunday at midnight UTC
+    - cron: "0 0 * * 0" # Weekly on Sunday at midnight UTC
   workflow_dispatch:
 
 jobs:
@@ -24,12 +24,14 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Run extraction script
         run: |
           cd map-card
           python scripts/extract-dreame-entities.py ../dreame-vacuum
+          npm ci
+          npx prettier --write src/generated/dreame-entities.ts
 
       - name: Check for changes
         id: diff
@@ -55,7 +57,7 @@ jobs:
             const version = versionMatch ? versionMatch[1] : 'unknown';
             const addedLines = (diff.match(/^\+[^+]/gm) || []).length;
             const removedLines = (diff.match(/^-[^-]/gm) || []).length;
-            
+
             const issueBody = `## Dreame Vacuum Integration Entity Changes Detected
 
             The weekly sync has detected changes in the dreame-vacuum integration entity definitions.

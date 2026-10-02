@@ -2,45 +2,16 @@ import type { HassEntity, HassConfig, RoomPosition, CleaningSelectionMode, Hass,
 import { getAttr } from './typeGuards';
 import { resolveRoomName } from './roomParser';
 
-export function resolveMapEntityId(hass: Hass, vacuumEntityId: string, configMapEntity?: string): string {
-  if (configMapEntity) {
-    return configMapEntity;
-  }
-
-  const vacuumBaseName = vacuumEntityId.split('.')[1];
-  const conventionalMapEntity = `camera.${vacuumBaseName}_map`;
-
-  if (isDreameMapCamera(hass.states[conventionalMapEntity])) {
-    return conventionalMapEntity;
-  }
-
-  for (const entityId of Object.keys(hass.states)) {
-    if (!entityId.startsWith('camera.') || !entityId.endsWith('_map') || entityId.includes('_map_')) {
-      continue;
-    }
-    if (isDreameMapCamera(hass.states[entityId])) {
-      return entityId;
-    }
-  }
-
-  return conventionalMapEntity;
+export function resolveMapEntityId(configuredMapEntity?: string, discoveredMapEntity?: string): string {
+  return configuredMapEntity || discoveredMapEntity || '';
 }
 
-function isDreameMapCamera(entity: HassEntity | undefined): boolean {
-  const attrs = entity?.attributes;
-  if (!attrs) return false;
-  return 'rooms' in attrs || 'vacuum_position' in attrs || 'calibration_points' in attrs || 'charger_position' in attrs;
-}
-
-export function extractEntityData(entity: HassEntity | undefined, config: HassConfig, hass?: Hass) {
+export function extractEntityData(entity: HassEntity | undefined, config: HassConfig, mapEntityId?: string) {
   if (!entity) {
     return null;
   }
 
   const deviceName = config.title || entity.attributes?.friendly_name || 'Dreame Vacuum';
-  const mapEntityId = hass
-    ? resolveMapEntityId(hass, config.entity, config.map_entity)
-    : config.map_entity || `camera.${config.entity.split('.')[1]}_map`;
 
   // Vacuum entity rooms are structured as Record<mapName, Room[]>
   const selectedMap = entity.attributes?.selected_map || '';

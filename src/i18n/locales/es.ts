@@ -248,6 +248,9 @@ export const es: Translation = {
       remaining: 'restante',
       reset: 'Restablecer',
     },
+    more: {
+      title: 'Más',
+    },
     device_info: {
       title: 'Información del dispositivo',
       firmware: 'Firmware',

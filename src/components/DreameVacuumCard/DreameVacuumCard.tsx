@@ -9,7 +9,15 @@ import { ShortcutsModal } from '@/components/ShortcutsModal';
 import { SettingsPanel } from '@/components/SettingsPanel';
 import { RoomSelectionDisplay } from '@/components/RoomSelectionDisplay';
 import { Toast } from '@/components/common';
-import { useCardUIState, useVacuumServices, useToast, useTranslation, useTheme, useMapGeometry } from '@/hooks';
+import {
+  useCardUIState,
+  useVacuumServices,
+  useToast,
+  useTranslation,
+  useTheme,
+  useMapGeometry,
+  useLoadDeviceEntities,
+} from '@/hooks';
 import { extractEntityData, getEffectiveCleaningMode, getAttr, getActiveSegments, resolveMapEntityId } from '@/utils';
 import { isRtlLanguage } from '@/i18n';
 import { VacuumCardProvider } from '@/contexts';
@@ -28,6 +36,7 @@ interface DreameVacuumCardProps {
 
 export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   const entity = hass.states[config.entity];
+  const deviceEntities = useLoadDeviceEntities(hass, config.entity);
   logger.debug('DreameVacuumCard', 'Loaded entity', entity);
   const themeType = config.theme || 'light';
   const language = config.language || 'en';
@@ -68,8 +77,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
     resetRepeatCount,
   } = useCardUIState({ defaultMode: config.default_mode });
 
-  // Get map entity ID
-  const mapEntityId = resolveMapEntityId(hass, config.entity, config.map_entity);
+  const mapEntityId = resolveMapEntityId(config.map_entity, deviceEntities.get('camera', 'map'));
   const mapGeometry = useMapGeometry({
     hass,
     mapEntityId,
@@ -198,21 +206,25 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
   }
 
   // Extract entity data
-  const entityData = extractEntityData(entity, config, hass);
+  const entityData = extractEntityData(entity, config, mapEntityId);
   if (!entityData) {
     return <div className="dreame-vacuum-card__error">{t('errors.failed_to_load')}</div>;
   }
 
-  const { deviceName, mapEntityId: extractedMapEntityId } = entityData;
-  // Use extracted mapEntityId if available, otherwise use the one we computed
-  const finalMapEntityId = extractedMapEntityId || mapEntityId;
+  const { deviceName } = entityData;
   const effectiveMode = getEffectiveCleaningMode(entity, selectedMode);
 
   // Check for shortcuts capability
   const hasShortcuts = (entity.attributes.capabilities ?? []).includes(CAPABILITY.SHORTCUTS);
 
   return (
-    <VacuumCardProvider hass={hass} entity={entity} config={config} language={language as SupportedLanguage}>
+    <VacuumCardProvider
+      hass={hass}
+      entity={entity}
+      config={config}
+      language={language as SupportedLanguage}
+      deviceEntities={deviceEntities}
+    >
       <div
         ref={containerRef}
         className={`dreame-vacuum-card dreame-vacuum-card--${theme.name}`}
@@ -225,7 +237,7 @@ export function DreameVacuumCard({ hass, config }: DreameVacuumCardProps) {
           <MapSelector />
 
           <VacuumMap
-            mapEntityId={finalMapEntityId}
+            mapEntityId={mapEntityId}
             geometry={mapGeometry}
             selectedMode={selectedMode}
             selectedRooms={selectedRooms}

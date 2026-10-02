@@ -4,8 +4,8 @@
  * Maps dreame-vacuum entities to UI sections for rendering.
  * This is the SINGLE SOURCE OF TRUTH for which entities appear in which section.
  *
- * The generated dreame-entities.ts provides the complete list of available entities.
- * This file determines which ones are displayed and in what section.
+ * A row renders when the entity registry has that translation key for this device.
+ * Entities that are not listed here appear under More.
  */
 
 import {
@@ -15,7 +15,6 @@ import {
   DREAME_BUTTONS,
   DREAME_SENSORS,
   DREAME_TIMES,
-  DREAME_CAPABILITIES,
 } from '@/generated/dreame-entities';
 
 // Entity platform types
@@ -27,8 +26,6 @@ export interface EntityDefinition {
   platform: EntityPlatform;
   labelKey: string;
   descriptionKey?: string;
-  /** Capability required for this entity to be shown */
-  capability?: string;
   /** Parent entity that must be enabled for this to show */
   parentKey?: string;
   /** For select entities: use segmented control instead of dropdown */
@@ -48,8 +45,6 @@ export interface SectionDefinition {
   icon?: string;
   order: number;
   entities: EntityDefinition[];
-  /** Capabilities required for section to be visible (any match) */
-  capabilities?: string[];
 }
 
 // Helper to create entity definition from generated constants
@@ -113,10 +108,6 @@ function btn(
   };
 }
 
-// Reserved for future use - sensors and times
-// function sensor(key: keyof typeof DREAME_SENSORS, labelKey: string, descriptionKey?: string, opts?: Partial<EntityDefinition>): EntityDefinition
-void DREAME_SENSORS;
-
 function time(
   key: keyof typeof DREAME_TIMES,
   labelKey: string,
@@ -132,9 +123,6 @@ function time(
   };
 }
 
-// Shorthand for capability check
-const CAP = DREAME_CAPABILITIES;
-
 // =============================================================================
 // SECTION DEFINITIONS
 // =============================================================================
@@ -146,41 +134,26 @@ export const QUICK_SETTINGS_SECTION: SectionDefinition = {
   entities: [
     sw('CHILD_LOCK', 'settings.quick_settings.child_lock', 'settings.quick_settings.child_lock_desc'),
     sw('RESUME_CLEANING', 'settings.quick_settings.resume_cleaning', 'settings.quick_settings.resume_cleaning_desc'),
-    sw('DND', 'settings.quick_settings.dnd', 'settings.quick_settings.dnd_desc', { capability: CAP.DND }),
-    time('DND_START', 'settings.quick_settings.dnd_start', undefined, {
-      capability: CAP.DND,
-      parentKey: 'dnd',
-    }),
-    time('DND_END', 'settings.quick_settings.dnd_end', undefined, {
-      capability: CAP.DND,
-      parentKey: 'dnd',
-    }),
+    sw('DND', 'settings.quick_settings.dnd', 'settings.quick_settings.dnd_desc'),
+    time('DND_START', 'settings.quick_settings.dnd_start', undefined, { parentKey: 'dnd' }),
+    time('DND_END', 'settings.quick_settings.dnd_end', undefined, { parentKey: 'dnd' }),
     sw(
       'DND_DISABLE_RESUME_CLEANING',
       'settings.quick_settings.dnd_disable_resume',
       'settings.quick_settings.dnd_disable_resume_desc',
-      {
-        capability: CAP.DND_FUNCTIONS,
-        parentKey: 'dnd',
-      }
+      { parentKey: 'dnd' }
     ),
     sw(
       'DND_DISABLE_AUTO_EMPTY',
       'settings.quick_settings.dnd_disable_auto_empty',
       'settings.quick_settings.dnd_disable_auto_empty_desc',
-      {
-        capability: CAP.DND_FUNCTIONS,
-        parentKey: 'dnd',
-      }
+      { parentKey: 'dnd' }
     ),
     sw(
       'DND_REDUCE_VOLUME',
       'settings.quick_settings.dnd_reduce_volume',
       'settings.quick_settings.dnd_reduce_volume_desc',
-      {
-        capability: CAP.DND_FUNCTIONS,
-        parentKey: 'dnd',
-      }
+      { parentKey: 'dnd' }
     ),
   ],
 };
@@ -225,7 +198,6 @@ export const CARPET_SETTINGS_SECTION: SectionDefinition = {
   key: 'carpet_settings',
   titleKey: 'settings.carpet.title',
   order: 3,
-  capabilities: [CAP.CARPET_RECOGNITION],
   entities: [
     sw('CARPET_RECOGNITION', 'settings.carpet.carpet_recognition', 'settings.carpet.carpet_recognition_desc'),
     sw('CARPET_AVOIDANCE', 'settings.carpet.carpet_avoidance', 'settings.carpet.carpet_avoidance_desc'),
@@ -259,10 +231,7 @@ export const FLOOR_SETTINGS_SECTION: SectionDefinition = {
     sel(
       'LOW_LYING_AREA_FREQUENCY',
       'settings.floor.low_lying_area_frequency',
-      'settings.floor.low_lying_area_frequency_desc',
-      {
-        capability: CAP.LOW_LYING_AREA_FREQUENCY,
-      }
+      'settings.floor.low_lying_area_frequency_desc'
     ),
   ],
 };
@@ -271,11 +240,8 @@ export const EDGE_CORNER_SECTION: SectionDefinition = {
   key: 'edge_corner',
   titleKey: 'settings.edge_corner.title',
   order: 5,
-  capabilities: [CAP.MOP_PAD_LIFTING, CAP.SIDE_REACH, CAP.MOP_PAD_SWING, CAP.MOP_PAD_SWING_PLUS],
   entities: [
-    sw('SIDE_REACH', 'settings.edge_corner.side_reach', 'settings.edge_corner.side_reach_desc', {
-      capability: CAP.SIDE_REACH,
-    }),
+    sw('SIDE_REACH', 'settings.edge_corner.side_reach', 'settings.edge_corner.side_reach_desc'),
     sw('MOP_EXTEND', 'settings.edge_corner.mop_extend', 'settings.edge_corner.mop_extend_desc'),
     sw('GAP_CLEANING_EXTENSION', 'settings.edge_corner.gap_cleaning', 'settings.edge_corner.gap_cleaning_desc', {
       parentKey: 'mop_extend',
@@ -293,11 +259,8 @@ export const VOLUME_SECTION: SectionDefinition = {
   order: 6,
   entities: [
     num('VOLUME', 'settings.volume.volume', undefined, { renderHint: 'volume', min: 0, max: 100 }),
-    sw('VOICE_ASSISTANT', 'settings.volume.voice_assistant', 'settings.volume.voice_assistant_desc', {
-      capability: CAP.VOICE_ASSISTANT,
-    }),
+    sw('VOICE_ASSISTANT', 'settings.volume.voice_assistant', 'settings.volume.voice_assistant_desc'),
     sel('VOICE_ASSISTANT_LANGUAGE', 'settings.volume.voice_language', 'settings.volume.voice_language_desc', {
-      capability: CAP.VOICE_ASSISTANT,
       parentKey: 'voice_assistant',
     }),
     sw(
@@ -312,86 +275,37 @@ export const DOCK_SETTINGS_SECTION: SectionDefinition = {
   key: 'dock_settings',
   titleKey: 'settings.dock.title',
   order: 7,
-  capabilities: [
-    CAP.AUTO_EMPTY_BASE,
-    CAP.SELF_WASH_BASE,
-    CAP.AUTO_ADD_DETERGENT,
-    CAP.SMART_MOP_WASHING,
-    CAP.WASHING_MODE,
-    CAP.HOT_WASHING,
-    CAP.OFF_PEAK_CHARGING,
-    CAP.STATION_CLEANING,
-    CAP.AUTO_REWASHING,
-  ],
   entities: [
-    sw('SELF_CLEAN', 'settings.dock.self_clean', 'settings.dock.self_clean_desc', { capability: CAP.SELF_WASH_BASE }),
-    sw('AUTO_DUST_COLLECTING', 'settings.dock.auto_dust_collecting', 'settings.dock.auto_dust_collecting_desc', {
-      capability: CAP.AUTO_EMPTY_BASE,
-    }),
-    sel('AUTO_EMPTY_MODE', 'settings.dock.auto_empty_mode', 'settings.dock.auto_empty_mode_desc', {
-      capability: CAP.AUTO_EMPTY_MODE,
-    }),
-    sel('AUTO_EMPTY_FREQUENCY', 'settings.dock.auto_empty_frequency', 'settings.dock.auto_empty_frequency_desc', {
-      capability: CAP.AUTO_EMPTY_BASE,
-    }),
-    sw('AUTO_ADD_DETERGENT', 'settings.dock.auto_detergent', 'settings.dock.auto_detergent_desc', {
-      capability: CAP.AUTO_ADD_DETERGENT,
-    }),
+    sw('SELF_CLEAN', 'settings.dock.self_clean', 'settings.dock.self_clean_desc'),
+    sw('AUTO_DUST_COLLECTING', 'settings.dock.auto_dust_collecting', 'settings.dock.auto_dust_collecting_desc'),
+    sel('AUTO_EMPTY_MODE', 'settings.dock.auto_empty_mode', 'settings.dock.auto_empty_mode_desc'),
+    sel('AUTO_EMPTY_FREQUENCY', 'settings.dock.auto_empty_frequency', 'settings.dock.auto_empty_frequency_desc'),
+    sw('AUTO_ADD_DETERGENT', 'settings.dock.auto_detergent', 'settings.dock.auto_detergent_desc'),
     sw(
       'MOP_WASHING_WITH_DETERGENT',
       'settings.dock.mop_washing_with_detergent',
-      'settings.dock.mop_washing_with_detergent_desc',
-      {
-        capability: CAP.AUTO_ADD_DETERGENT,
-      }
+      'settings.dock.mop_washing_with_detergent_desc'
     ),
     sw('MOPPING_WITH_DETERGENT', 'settings.dock.mopping_with_detergent', 'settings.dock.mopping_with_detergent_desc'),
-    sw('WATER_ELECTROLYSIS', 'settings.dock.water_electrolysis', 'settings.dock.water_electrolysis_desc', {
-      capability: CAP.SELF_WASH_BASE,
-    }),
+    sw('WATER_ELECTROLYSIS', 'settings.dock.water_electrolysis', 'settings.dock.water_electrolysis_desc'),
     sw('AUTO_WATER_REFILLING', 'settings.dock.auto_water_refilling', 'settings.dock.auto_water_refilling_desc'),
-    sw('SMART_MOP_WASHING', 'settings.dock.smart_washing', 'settings.dock.smart_washing_desc', {
-      capability: CAP.SMART_MOP_WASHING,
-    }),
-    sel('MOP_WASH_LEVEL', 'settings.dock.mop_wash_level', 'settings.dock.mop_wash_level_desc', {
-      capability: CAP.SELF_WASH_BASE,
-    }),
-    sel('WASHING_MODE', 'settings.dock.washing_mode', 'settings.dock.washing_mode_desc', {
-      capability: CAP.WASHING_MODE,
-    }),
-    sel('WATER_TEMPERATURE', 'settings.dock.water_temperature', 'settings.dock.water_temperature_desc', {
-      capability: CAP.HOT_WASHING,
-    }),
-    sw('AUTO_DRYING', 'settings.dock.auto_drying', 'settings.dock.auto_drying_desc', {
-      capability: CAP.SELF_WASH_BASE,
-    }),
-    sel('DRYING_TIME', 'settings.dock.drying_time', 'settings.dock.drying_time_desc', {
-      capability: CAP.SELF_WASH_BASE,
-      useSegmentedControl: true,
-    }),
-    sel('AUTO_REWASHING', 'settings.dock.auto_rewashing', 'settings.dock.auto_rewashing_desc', {
-      capability: CAP.AUTO_REWASHING,
-    }),
-    sw('OFF_PEAK_CHARGING', 'settings.dock.off_peak_charging', 'settings.dock.off_peak_charging_desc', {
-      capability: CAP.OFF_PEAK_CHARGING,
-    }),
+    sw('SMART_MOP_WASHING', 'settings.dock.smart_washing', 'settings.dock.smart_washing_desc'),
+    sel('MOP_WASH_LEVEL', 'settings.dock.mop_wash_level', 'settings.dock.mop_wash_level_desc'),
+    sel('WASHING_MODE', 'settings.dock.washing_mode', 'settings.dock.washing_mode_desc'),
+    sel('WATER_TEMPERATURE', 'settings.dock.water_temperature', 'settings.dock.water_temperature_desc'),
+    sw('AUTO_DRYING', 'settings.dock.auto_drying', 'settings.dock.auto_drying_desc'),
+    sel('DRYING_TIME', 'settings.dock.drying_time', 'settings.dock.drying_time_desc', { useSegmentedControl: true }),
+    sel('AUTO_REWASHING', 'settings.dock.auto_rewashing', 'settings.dock.auto_rewashing_desc'),
+    sw('OFF_PEAK_CHARGING', 'settings.dock.off_peak_charging', 'settings.dock.off_peak_charging_desc'),
     time('OFF_PEAK_CHARGING_START', 'settings.dock.off_peak_charging_start', undefined, {
-      capability: CAP.OFF_PEAK_CHARGING,
       parentKey: 'off_peak_charging',
     }),
     time('OFF_PEAK_CHARGING_END', 'settings.dock.off_peak_charging_end', undefined, {
-      capability: CAP.OFF_PEAK_CHARGING,
       parentKey: 'off_peak_charging',
     }),
-    btn('BASE_STATION_CLEANING', 'settings.dock.station_cleaning', 'settings.dock.station_cleaning_desc', {
-      capability: CAP.STATION_CLEANING,
-    }),
-    btn('BASE_STATION_SELF_REPAIR', 'settings.dock.self_repair', 'settings.dock.self_repair_desc', {
-      capability: CAP.STATION_CLEANING,
-    }),
-    sel('SCRAPER_FREQUENCY', 'settings.dock.scraper_frequency', 'settings.dock.scraper_frequency_desc', {
-      capability: CAP.SCRAPER_FREQUENCY,
-    }),
+    btn('BASE_STATION_CLEANING', 'settings.dock.station_cleaning', 'settings.dock.station_cleaning_desc'),
+    btn('BASE_STATION_SELF_REPAIR', 'settings.dock.self_repair', 'settings.dock.self_repair_desc'),
+    sel('SCRAPER_FREQUENCY', 'settings.dock.scraper_frequency', 'settings.dock.scraper_frequency_desc'),
   ],
 };
 
@@ -399,7 +313,6 @@ export const AI_DETECTION_SECTION: SectionDefinition = {
   key: 'ai_detection',
   titleKey: 'settings.ai_detection.title',
   order: 8,
-  capabilities: [CAP.AI_DETECTION],
   entities: [
     sw(
       'INTELLIGENT_RECOGNITION',
@@ -608,6 +521,44 @@ export const ALL_SECTIONS: SectionDefinition[] = [
 
 export function getSectionByKey(key: string): SectionDefinition | undefined {
   return ALL_SECTIONS.find((s) => s.key === key);
+}
+
+interface CompanionEntityRef {
+  platform: EntityPlatform;
+  key: string;
+}
+
+/** Companion entities rendered outside Settings: cleaning modal and map selector. */
+export const CARD_COMPANION_ENTITIES = {
+  cleaningMode: { platform: 'select', key: DREAME_SELECTS.CLEANING_MODE.key },
+  cleangeniusMode: { platform: 'select', key: DREAME_SELECTS.CLEANGENIUS_MODE.key },
+  cleangenius: { platform: 'select', key: DREAME_SELECTS.CLEANGENIUS.key },
+  suctionLevel: { platform: 'select', key: DREAME_SELECTS.SUCTION_LEVEL.key },
+  waterVolume: { platform: 'select', key: DREAME_SELECTS.WATER_VOLUME.key },
+  mopPadHumidity: { platform: 'select', key: DREAME_SELECTS.MOP_PAD_HUMIDITY.key },
+  cleaningRoute: { platform: 'select', key: DREAME_SELECTS.CLEANING_ROUTE.key },
+  maxSuctionPower: { platform: 'switch', key: DREAME_SWITCHES.MAX_SUCTION_POWER.key },
+  wetnessLevel: { platform: 'number', key: DREAME_NUMBERS.WETNESS_LEVEL.key },
+  selfCleanFrequency: { platform: 'select', key: DREAME_SELECTS.SELF_CLEAN_FREQUENCY.key },
+  selfCleanArea: { platform: 'number', key: DREAME_NUMBERS.SELF_CLEAN_AREA.key },
+  selfCleanTime: { platform: 'number', key: DREAME_NUMBERS.SELF_CLEAN_TIME.key },
+  stateSensor: { platform: 'sensor', key: DREAME_SENSORS.STATE.key },
+  customizedCleaning: { platform: 'switch', key: DREAME_SWITCHES.CUSTOMIZED_CLEANING.key },
+  selectedMap: { platform: 'select', key: DREAME_SELECTS.SELECTED_MAP.key },
+} as const satisfies Record<string, CompanionEntityRef>;
+
+export function curatedCompanionKeys(): ReadonlySet<string> {
+  const refs: CompanionEntityRef[] = [
+    ...ALL_SECTIONS.flatMap((section) => section.entities),
+    ...Object.values(CARD_COMPANION_ENTITIES),
+  ];
+  const keys = new Set<string>();
+  for (const { platform, key } of refs) {
+    if (platform !== 'attribute') {
+      keys.add(`${platform}:${key}`);
+    }
+  }
+  return keys;
 }
 
 export function getEntityDefinition(entityKey: string): EntityDefinition | undefined {
